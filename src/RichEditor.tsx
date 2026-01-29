@@ -88,6 +88,7 @@ export interface RichTextEditorRef {
   dismissKeyboard: () => void;
   getContentHtml: () => Promise<string>;
   isKeyboardOpen: boolean;
+  sendAction: (action: string) => void;
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorRef, any>(function RichTextEditor(
@@ -297,7 +298,9 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, any>(function RichTe
     sendAction(actions.init);
   };
 
-  useImperativeHandle(ref, () => ({
+  useImperativeHandle(ref, () => {
+    const postActionToWebView = sendAction;
+    return {
     registerToolbar(listener: (items: string[]) => void) {
       selectionChangeListeners.current = [...selectionChangeListeners.current, listener];
     },
@@ -388,13 +391,17 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, any>(function RichTe
       return new Promise((resolve, reject) => {
         contentResolveRef.current = resolve;
         contentRejectRef.current = reject;
-        sendAction(actions.content, 'postHtml');
+        postActionToWebView(actions.content, 'postHtml');
         pendingContentHtmlRef.current = setTimeout(() => {
           if (contentRejectRef.current) contentRejectRef.current('timeout');
         }, 5000);
       });
     },
-  }));
+    sendAction(action: string) {
+      postActionToWebView(action, 'result');
+    },
+  };
+  });
 
   const onViewLayout = ({ nativeEvent: { layout } }: any) => {
     layoutRef.current = layout;
