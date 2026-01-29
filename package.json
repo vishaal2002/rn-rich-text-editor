@@ -21,7 +21,7 @@
     "package.json"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/img dist/",
     "watch": "tsc -w"
   },
   "peerDependencies": {
