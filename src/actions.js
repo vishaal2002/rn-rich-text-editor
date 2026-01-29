@@ -17,6 +17,7 @@ export const actions = {
   alignCenter: 'justifyCenter',
   alignRight: 'justifyRight',
   alignFull: 'justifyFull',
+  align: 'align', // Single icon with dropdown for all 4 align options
   insertBulletsList: 'unorderedList',
   insertOrderedList: 'orderedList',
   checkboxList: 'checkboxList',

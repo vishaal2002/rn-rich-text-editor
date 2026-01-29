@@ -109,6 +109,7 @@ export const actions: {
   alignCenter: string;
   alignRight: string;
   alignFull: string;
+  align: string;
   insertBulletsList: string;
   insertOrderedList: string;
   checkboxList: string;

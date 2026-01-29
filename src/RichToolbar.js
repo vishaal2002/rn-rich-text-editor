@@ -2,6 +2,13 @@ import React, { Component } from 'react';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { actions } from './actions';
 
+const ALIGN_ACTIONS = [
+  actions.alignLeft,
+  actions.alignCenter,
+  actions.alignRight,
+  actions.alignFull,
+];
+
 export const defaultActions = [
   actions.keyboard,
   actions.setBold,
@@ -43,6 +50,7 @@ function getDefaultIcon() {
   texts[actions.alignCenter] = require('./img/justify_center.png');
   texts[actions.alignRight] = require('./img/justify_right.png');
   texts[actions.alignFull] = require('./img/justify_full.png');
+  texts[actions.align] = require('./img/justify_left.png');
   texts[actions.blockquote] = require('./img/blockquote.png');
   texts[actions.line] = require('./img/line.png');
   texts[actions.fontSize] = require('./img/fontSize.png');
@@ -65,6 +73,7 @@ export default class RichToolbar extends Component {
     this.editor = null;
     this.state = {
       items: [],
+      selectedAlign: null,
     };
   }
 
@@ -74,6 +83,7 @@ export default class RichToolbar extends Component {
       nextState.items !== that.state.items ||
       nextState.actions !== that.state.actions ||
       nextState.data !== that.state.data ||
+      nextState.selectedAlign !== that.state.selectedAlign ||
       nextProps.style !== that.props.style
     );
   }
@@ -81,10 +91,18 @@ export default class RichToolbar extends Component {
   static getDerivedStateFromProps(nextProps, prevState) {
     const { actions } = nextProps;
     if (actions !== prevState.actions) {
-      let { items = [] } = prevState;
+      const items = prevState.items || [];
+      const isItemSelected = (action) =>
+        items.includes(action) || items.some(item => item && item.type === action);
       return {
         actions,
-        data: actions.map(action => ({ action, selected: items.includes(action) })),
+        data: actions.map(action => ({
+          action,
+          selected:
+            action === actions.align
+              ? ALIGN_ACTIONS.some(a => isItemSelected(a))
+              : isItemSelected(action),
+        })),
       };
     }
     return null;
@@ -112,15 +130,26 @@ export default class RichToolbar extends Component {
     }
   };
 
+  _isItemSelected(items, action) {
+    return (
+      items.includes(action) || items.some(item => item && item.type === action)
+    );
+  }
+
   setSelectedItems(items) {
     const { items: selectedItems } = this.state;
     if (this.editor && items !== selectedItems) {
+      const selectedAlign = ALIGN_ACTIONS.find(a => this._isItemSelected(items, a)) || null;
       this.setState({
         items,
-        data: this.state.actions.map(action => ({
-          action,
-          selected: items.includes(action) || items.some(item => item && item.type === action),
-        })),
+        selectedAlign,
+        data: this.state.actions.map(action => {
+          const isAlignAction = action === actions.align;
+          const selected = isAlignAction
+            ? !!selectedAlign
+            : this._isItemSelected(items, action);
+          return { action, selected };
+        }),
       });
     }
   }
@@ -165,6 +194,23 @@ export default class RichToolbar extends Component {
 
     if (!editor) {
       this._mount();
+      return;
+    }
+
+    if (action === actions.align) {
+      const { selectedAlign } = this.state;
+      // Cycle through alignments: Left -> Center -> Right -> Justify -> Left
+      let nextAlignIndex = 0; // Default to Left
+      if (selectedAlign) {
+        const currentIndex = ALIGN_ACTIONS.indexOf(selectedAlign);
+        if (currentIndex >= 0) {
+          nextAlignIndex = (currentIndex + 1) % ALIGN_ACTIONS.length;
+        }
+      }
+      const nextAlign = ALIGN_ACTIONS[nextAlignIndex];
+      editor.showAndroidKeyboard();
+      editor.sendAction(nextAlign, 'result');
+      // The selectedAlign will be updated when setSelectedItems is called by the editor
       return;
     }
 
@@ -270,7 +316,57 @@ export default class RichToolbar extends Component {
     );
   }
 
+  _renderAlignButton(action, selected) {
+    const that = this;
+    const { iconSize, iconGap, disabled, itemStyle } = that.props;
+    const style = selected ? that._getButtonSelectedStyle() : that._getButtonUnselectedStyle();
+    const tintColor = disabled
+      ? that.props.disabledIconTint
+      : selected
+        ? that.props.selectedIconTint
+        : that.props.iconTint;
+    const { selectedAlign } = that.state;
+
+    // Use the icon for the current alignment, or default to alignLeft icon
+    const currentAlignAction = selectedAlign || actions.alignLeft;
+    const icon = that._getButtonIcon(currentAlignAction);
+
+    return (
+      <TouchableOpacity
+        key={action}
+        disabled={disabled}
+        style={[{ width: iconGap + iconSize }, styles.item, itemStyle, style]}
+        testID={'button_align'}
+        accessible={true}
+        onPress={() => that._onPress(action)}>
+        {icon ? (
+          typeof icon === 'function' ? (
+            icon({
+              selected,
+              disabled,
+              tintColor: tintColor,
+              iconSize,
+              iconGap,
+            })
+          ) : (
+            <Image
+              source={icon}
+              style={{
+                tintColor,
+                height: iconSize,
+                width: iconSize,
+              }}
+            />
+          )
+        ) : null}
+      </TouchableOpacity>
+    );
+  }
+
   _renderAction(action, selected) {
+    if (action === actions.align) {
+      return this._renderAlignButton(action, selected);
+    }
     return this.props.renderAction
       ? this.props.renderAction(action, selected)
       : this._defaultRenderAction(action, selected);
