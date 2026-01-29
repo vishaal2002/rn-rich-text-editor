@@ -7,6 +7,9 @@ import { createHTML } from './editor/createHTML';
 
 const PlatformIOS = Platform.OS === 'ios';
 
+/** Default editor height when user doesn't set initialHeight */
+const DEFAULT_EDITOR_HEIGHT = 128;
+
 export default class RichTextEditor extends Component {
   static defaultProps = {
     contentInset: {},
@@ -101,7 +104,7 @@ export default class RichTextEditor extends Component {
           }),
       },
       keyboardHeight: 0,
-      height: initialHeight,
+      height: initialHeight > 0 ? initialHeight : DEFAULT_EDITOR_HEIGHT,
     };
     that.focusListeners = [];
   }
@@ -144,14 +147,6 @@ export default class RichTextEditor extends Component {
     // this.setState({keyboardHeight: 0});
   }
 
-  /*setEditorAvailableHeightBasedOnKeyboardHeight(keyboardHeight) {
-        const {top = 0, bottom = 0} = this.props.contentInset;
-        const {marginTop = 0, marginBottom = 0} = this.props.style;
-        const spacing = marginTop + marginBottom + top + bottom;
-
-        const editorAvailableHeight = Dimensions.get('window').height - keyboardHeight - spacing;
-        // this.setEditorHeight(editorAvailableHeight);
-    }*/
 
   onMessage(event) {
     const that = this;
@@ -225,14 +220,9 @@ export default class RichTextEditor extends Component {
   }
 
   setWebHeight(height) {
-    const { onHeightChange, useContainer, initialHeight } = this.props;
-    if (height !== this.state.height) {
-      const maxHeight = Math.max(height, initialHeight);
-      if (!this.unmount && useContainer && maxHeight >= initialHeight) {
-        this.setState({ height: maxHeight });
-      }
-      onHeightChange && onHeightChange(height);
-    }
+    const { onHeightChange } = this.props;
+    // Editor has fixed height (from initialHeight or DEFAULT_EDITOR_HEIGHT); we do not resize on content growth
+    onHeightChange && onHeightChange(height);
   }
 
   /**
