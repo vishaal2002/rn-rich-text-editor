@@ -64,9 +64,15 @@ export const RichEditor = forwardRef((props: any, ref) => {
     }
   };
 
+  const sendToWebView = (type: string) => {
+    const data = JSON.stringify({ type });
+    const script = `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(data)} })); true;`;
+    webRef.current?.injectJavaScript(script);
+  };
+
   useImperativeHandle(ref, () => ({
     sendAction(type: string) {
-      webRef.current?.postMessage(JSON.stringify({ type }));
+      sendToWebView(type);
     },
     registerToolbar(listener: (items: string[]) => void) {
       selectionChangeListeners.current.push(listener);
@@ -76,10 +82,10 @@ export const RichEditor = forwardRef((props: any, ref) => {
         !keyboardOpen && inputRef.current?.focus();
         webRef.current?.requestFocus?.();
       }
-      webRef.current?.postMessage(JSON.stringify({ type: 'focus' }));
+      sendToWebView('focus');
     },
     dismissKeyboard() {
-      webRef.current?.postMessage(JSON.stringify({ type: 'blur' }));
+      sendToWebView('blur');
       Keyboard.dismiss();
     },
     get isKeyboardOpen() {

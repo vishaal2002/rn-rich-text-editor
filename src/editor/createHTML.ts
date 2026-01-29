@@ -70,52 +70,56 @@ ${getContentCSS()}
       editor.focus();
     } else if (type === 'blur') {
       editor.blur();
-    } else if (type === 'bold') {
-      document.execCommand('bold');
-    } else if (type === 'italic') {
-      document.execCommand('italic');
-    } else if (type === 'underline') {
-      document.execCommand('underline');
-    } else if (type === 'strikethrough') {
-      document.execCommand('strikeThrough');
-    } else if (type === 'removeFormat') {
-      document.execCommand('removeFormat');
-    } else if (type === 'undo') {
-      document.execCommand('undo');
-    } else if (type === 'redo') {
-      document.execCommand('redo');
-    } else if (type === 'insertUnorderedList') {
-      document.execCommand('insertUnorderedList');
-    } else if (type === 'insertOrderedList') {
-      document.execCommand('insertOrderedList');
-    } else if (type === 'checkboxList') {
-      document.execCommand('insertOrderedList');
-    } else if (type === 'indent') {
-      document.execCommand('indent');
-    } else if (type === 'outdent') {
-      document.execCommand('outdent');
-    } else if (type === 'justifyLeft') {
-      document.execCommand('justifyLeft');
-    } else if (type === 'justifyCenter') {
-      document.execCommand('justifyCenter');
-    } else if (type === 'justifyRight') {
-      document.execCommand('justifyRight');
-    } else if (type === 'justifyFull') {
-      document.execCommand('justifyFull');
-    } else if (type === 'blockquote') {
-      document.execCommand('formatBlock', false, 'blockquote');
-    } else if (type === 'code') {
-      document.execCommand('formatBlock', false, 'pre');
-    } else if (type === 'link') {
-      const url = prompt('Enter link URL:');
-      if (url) {
-        const sel = window.getSelection();
-        const range = sel.getRangeAt(0);
-        const link = document.createElement('a');
-        link.href = url;
-        link.textContent = sel.toString() || url;
-        range.deleteContents();
-        range.insertNode(link);
+    } else {
+      // Restore focus so format commands apply to the editor (important when toolbar tap steals focus)
+      editor.focus();
+      if (type === 'bold') {
+        document.execCommand('bold');
+      } else if (type === 'italic') {
+        document.execCommand('italic');
+      } else if (type === 'underline') {
+        document.execCommand('underline');
+      } else if (type === 'strikethrough') {
+        document.execCommand('strikeThrough');
+      } else if (type === 'removeFormat') {
+        document.execCommand('removeFormat');
+      } else if (type === 'undo') {
+        document.execCommand('undo');
+      } else if (type === 'redo') {
+        document.execCommand('redo');
+      } else if (type === 'insertUnorderedList') {
+        document.execCommand('insertUnorderedList');
+      } else if (type === 'insertOrderedList') {
+        document.execCommand('insertOrderedList');
+      } else if (type === 'checkboxList') {
+        document.execCommand('insertOrderedList');
+      } else if (type === 'indent') {
+        document.execCommand('indent');
+      } else if (type === 'outdent') {
+        document.execCommand('outdent');
+      } else if (type === 'justifyLeft') {
+        document.execCommand('justifyLeft');
+      } else if (type === 'justifyCenter') {
+        document.execCommand('justifyCenter');
+      } else if (type === 'justifyRight') {
+        document.execCommand('justifyRight');
+      } else if (type === 'justifyFull') {
+        document.execCommand('justifyFull');
+      } else if (type === 'blockquote') {
+        document.execCommand('formatBlock', false, 'blockquote');
+      } else if (type === 'code') {
+        document.execCommand('formatBlock', false, 'pre');
+      } else if (type === 'link') {
+        const url = prompt('Enter link URL:');
+        if (url) {
+          const sel = window.getSelection();
+          const range = sel.getRangeAt(0);
+          const link = document.createElement('a');
+          link.href = url;
+          link.textContent = sel.toString() || url;
+          range.deleteContents();
+          range.insertNode(link);
+        }
       }
     }
   });
