@@ -11,13 +11,13 @@ npm install rn-rich-text-editor
 ## Usage
 
 ```tsx
-import { RichEditor, RichToolbar, actions } from 'rn-rich-text-editor';
+import { Editor, Toolbar, actions } from 'rn-rich-text-editor';
 
 function App() {
   return (
     <>
-      <RichEditor ref={editorRef} onMessage={handleMessage} />
-      <RichToolbar editorRef={editorRef} />
+      <Editor ref={editorRef} onMessage={handleMessage} />
+      <Toolbar editorRef={editorRef} />
     </>
   );
 }
@@ -25,7 +25,7 @@ function App() {
 
 ## API
 
-### RichEditor
+### Editor
 
 Main editor component.
 
@@ -35,12 +35,12 @@ Main editor component.
 **Ref Methods:**
 - `sendAction(type: string)` - Send action to editor
 
-### RichToolbar
+### Toolbar
 
 Toolbar component for editor actions.
 
 **Props:**
-- `editorRef: RefObject` - Reference to RichEditor instance
+- `editorRef: RefObject` - Reference to Editor instance
 
 ### Actions
 

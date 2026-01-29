@@ -59,7 +59,7 @@ function getDefaultIcon() {
 }
 
 // noinspection FallThroughInSwitchStatementJS
-export default class RichToolbar extends Component {
+export default class Toolbar extends Component {
   static defaultProps = {
     actions: defaultActions,
     disabled: false,

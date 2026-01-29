@@ -10,7 +10,7 @@ const PlatformIOS = Platform.OS === 'ios';
 /** Default editor height when user doesn't set initialHeight */
 const DEFAULT_EDITOR_HEIGHT = 128;
 
-export default class RichTextEditor extends Component {
+export default class Editor extends Component {
   static defaultProps = {
     contentInset: {},
     style: {},

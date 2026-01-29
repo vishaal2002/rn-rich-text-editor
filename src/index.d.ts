@@ -1,7 +1,7 @@
 import type React from 'react';
 
-/** Rich text editor ref API (use with ref on RichEditor) */
-export interface RichEditorRef {
+/** Editor ref API (use with ref on Editor) */
+export interface EditorRef {
   registerToolbar: (listener: (items: string[]) => void) => void;
   setContentFocusHandler: (listener: () => void) => void;
   setContentHTML: (html: string) => void;
@@ -31,8 +31,8 @@ export interface RichEditorRef {
   sendAction: (action: string) => void;
 }
 
-/** Props for the RichEditor component */
-export interface RichEditorProps {
+/** Props for the Editor component */
+export interface EditorProps {
   contentInset?: object;
   style?: object;
   placeholder?: string;
@@ -63,10 +63,10 @@ export interface RichEditorProps {
   [key: string]: unknown;
 }
 
-/** Props for the RichToolbar component */
-export interface RichToolbarProps {
-  editor?: { current: RichEditorRef | null };
-  getEditor?: () => RichEditorRef | null;
+/** Props for the Toolbar component */
+export interface ToolbarProps {
+  editor?: { current: EditorRef | null };
+  getEditor?: () => EditorRef | null;
   actions?: string[];
   disabled?: boolean;
   iconTint?: string;
@@ -149,8 +149,8 @@ export function createHTML(options?: object): string;
 /** Get content CSS string for the editor */
 export function getContentCSS(): string;
 
-/** Rich text editor component (use ref to get RichEditorRef) */
-export const RichEditor: React.ComponentType<RichEditorProps>;
+/** Editor component (use ref to get EditorRef) */
+export const Editor: React.ComponentType<EditorProps>;
 
-/** Toolbar component for the rich editor */
-export const RichToolbar: React.ComponentType<RichToolbarProps>;
+/** Toolbar component for the editor */
+export const Toolbar: React.ComponentType<ToolbarProps>;
