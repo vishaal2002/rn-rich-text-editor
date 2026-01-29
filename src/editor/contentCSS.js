@@ -1,4 +1,4 @@
-export function getContentCSS() {
+function getContentCSS() {
   return `
   <style>
       video {max-width: 98%;margin-left:auto;margin-right:auto;display: block;}
@@ -16,4 +16,6 @@ export function getContentCSS() {
   </style>
   `;
   }
+
+  export { getContentCSS };
   

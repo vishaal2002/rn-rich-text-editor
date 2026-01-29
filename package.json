@@ -14,22 +14,26 @@
     "type": "git",
     "url": "git+https://github.com/vishaal2002/rn-rich-text-editor.git"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
   "files": [
-    "dist",
+    "src",
     "package.json"
   ],
   "scripts": {
-    "build": "tsc && cp -r src/img dist/",
-    "watch": "tsc -w"
+    "build": "echo 'No build required — package uses src/ directly'"
   },
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
     "react-native-webview": "*"
-  },
-  "devDependencies": {
-    "typescript": "^5.9.3"
   }
 }
