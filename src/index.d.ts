@@ -59,6 +59,7 @@ export interface RichEditorProps {
   onCursorPosition?: (offsetY: number) => void;
   onLink?: (data: unknown) => void;
   onHeightChange?: (height: number) => void;
+  errorMessage?: string;
   [key: string]: unknown;
 }
 

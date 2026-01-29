@@ -304,13 +304,17 @@ export default class RichTextEditor extends Component {
     // useContainer is an optional prop with default value of true
     // If set to true, it will use a View wrapper with styles and height.
     // If set to false, it will not use a View wrapper
-    const { useContainer, style } = this.props;
+    const { useContainer, style, errorMessage } = this.props;
+    const errorStyle = errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
+    
     return useContainer ? (
-      <View style={[style, { height }]} onLayout={this.onViewLayout}>
+      <View style={[style, { height }, errorStyle]} onLayout={this.onViewLayout}>
         {this.renderWebView()}
       </View>
     ) : (
-      this.renderWebView()
+      <View style={errorStyle}>
+        {this.renderWebView()}
+      </View>
     );
   }
 

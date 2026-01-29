@@ -6,7 +6,7 @@ const ALIGN_ACTIONS = [
   actions.alignLeft,
   actions.alignCenter,
   actions.alignRight,
-  actions.alignFull,
+  // actions.alignFull,
 ];
 
 export const defaultActions = [
