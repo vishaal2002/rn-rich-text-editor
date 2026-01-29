@@ -46,11 +46,46 @@ ${getContentCSS()}
     });
   });
 
+  editor.addEventListener('focus', () => {
+    post('CONTENT_FOCUSED');
+  });
+
+  editor.addEventListener('blur', () => {
+    post('CONTENT_BLUR');
+  });
+
   window.addEventListener('message', e => {
     const msg = JSON.parse(e.data);
-    if (msg.type === 'bold') document.execCommand('bold');
-    if (msg.type === 'italic') document.execCommand('italic');
-    if (msg.type === 'underline') document.execCommand('underline');
+    const type = msg.type;
+    
+    if (type === 'bold') document.execCommand('bold');
+    else if (type === 'italic') document.execCommand('italic');
+    else if (type === 'underline') document.execCommand('underline');
+    else if (type === 'link') {
+      const url = prompt('Enter link URL:');
+      if (url) {
+        const sel = window.getSelection();
+        const range = sel.getRangeAt(0);
+        const link = document.createElement('a');
+        link.href = url;
+        link.textContent = sel.toString() || url;
+        range.deleteContents();
+        range.insertNode(link);
+      }
+    }
+    else if (type === 'checkboxList') {
+      if (document.queryCommandState('insertOrderedList')) {
+        document.execCommand('insertOrderedList');
+      } else {
+        document.execCommand('insertOrderedList');
+      }
+    }
+    else if (type === 'focus') {
+      editor.focus();
+    }
+    else if (type === 'blur') {
+      editor.blur();
+    }
   });
 </script>
 </body>
