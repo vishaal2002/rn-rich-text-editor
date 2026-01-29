@@ -432,6 +432,10 @@ export default class RichTextEditor extends Component {
     this.sendAction(actions.fontName, 'result', name);
   }
 
+  setLineHeight(value) {
+    this.sendAction(actions.lineHeight, 'result', value);
+  }
+
   commandDOM(command) {
     if (command) {
       this.sendAction(actions.content, 'commandDOM', command);

@@ -22,6 +22,7 @@ export interface RichEditorRef {
   setForeColor: (color: string) => void;
   setHiliteColor: (color: string) => void;
   setFontName: (name: string) => void;
+  setLineHeight: (value: number | string) => void;
   commandDOM: (command: unknown) => void;
   command: (command: unknown) => void;
   dismissKeyboard: () => void;
@@ -118,6 +119,7 @@ export const actions: {
   insertVideo: string;
   fontSize: string;
   fontName: string;
+  lineHeight: string;
   setSubscript: string;
   setSuperscript: string;
   setStrikethrough: string;

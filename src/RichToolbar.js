@@ -12,6 +12,7 @@ export const defaultActions = [
   actions.indent,
   actions.outdent,
   actions.insertLink,
+  actions.lineHeight,
 ];
 
 function getDefaultIcon() {
@@ -45,6 +46,7 @@ function getDefaultIcon() {
   texts[actions.blockquote] = require('./img/blockquote.png');
   texts[actions.line] = require('./img/line.png');
   texts[actions.fontSize] = require('./img/fontSize.png');
+  texts[actions.lineHeight] = require('./img/fontSize.png');
   return texts;
 }
 
@@ -200,6 +202,22 @@ export default class RichToolbar extends Component {
       case actions.outdent:
         editor.showAndroidKeyboard();
         editor.sendAction(action, 'result');
+        break;
+      case actions.lineHeight:
+        editor.showAndroidKeyboard();
+        if (this.props[action]) {
+          this.props[action]();
+        } else {
+          editor.sendAction(action, 'result', 1.5);
+        }
+        break;
+      case actions.fontSize:
+      case actions.fontName:
+      case actions.foreColor:
+      case actions.hiliteColor:
+        if (this.props[action]) {
+          this.props[action]();
+        }
         break;
       case actions.insertImage:
         onPressAddImage?.();

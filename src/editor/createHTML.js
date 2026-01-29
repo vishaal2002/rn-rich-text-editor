@@ -26,30 +26,6 @@ function createHTML(options = {}) {
     styleWithCSS = false,
     useCharacter = true,
     defaultHttps = true,
-  }: {
-    backgroundColor?: string;
-    color?: string;
-    caretColor?: string;
-    placeholderColor?: string;
-    contentCSSText?: string;
-    cssText?: string;
-    initialCSSText?: string;
-    pasteAsPlainText?: boolean;
-    pasteListener?: boolean;
-    keyDownListener?: boolean;
-    keyUpListener?: boolean;
-    inputListener?: boolean;
-    autoCapitalize?: string;
-    enterKeyHint?: string;
-    initialFocus?: boolean;
-    spellcheck?: boolean;
-    autoCorrect?: boolean;
-    defaultParagraphSeparator?: string;
-    firstFocusEnd?: boolean;
-    useContainer?: boolean;
-    styleWithCSS?: boolean;
-    useCharacter?: boolean;
-    defaultHttps?: boolean;
   } = options;
   return `
 <!DOCTYPE html>
@@ -341,6 +317,33 @@ function createHTML(options = {}) {
             foreColor: { state: function() { return queryCommandValue('foreColor'); }, result: function(color) { return exec('foreColor', color); }},
             fontSize: { state: function() { return queryCommandValue('fontSize'); }, result: function(size) { return exec('fontSize', size); }},
             fontName: { result: function(name) { return exec('fontName', name); }},
+            lineHeight: {
+                result: function(value) {
+                    if (value == null || value === '') return;
+                    var sel = document.getSelection();
+                    if (sel.rangeCount === 0) return;
+                    var range = sel.getRangeAt(0);
+                    var span = document.createElement('span');
+                    span.style.lineHeight = typeof value === 'number' ? String(value) : String(value);
+                    try {
+                        if (range.collapsed) {
+                            range.insertNode(span);
+                            range.setStart(span, 0);
+                            range.setEnd(span, 0);
+                        } else {
+                            var fragment = range.extractContents();
+                            span.appendChild(fragment);
+                            range.insertNode(span);
+                            range.setStart(span, 0);
+                            range.setEnd(span, 0);
+                        }
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                        saveSelection();
+                        editor.settings.onChange();
+                    } catch (e) {}
+                }
+            },
             link: {
                 // result: function(data) {
                 //     data = data || {};

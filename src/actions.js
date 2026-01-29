@@ -27,6 +27,7 @@ export const actions = {
   insertVideo: 'video',
   fontSize: 'fontSize',
   fontName: 'fontName',
+  lineHeight: 'lineHeight',
   setSubscript: 'subscript',
   setSuperscript: 'superscript',
   setStrikethrough: 'strikeThrough',
