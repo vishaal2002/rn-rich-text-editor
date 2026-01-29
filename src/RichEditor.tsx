@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useRef, useState, useEffect, useMemo } from 'react';
+import React, { Component } from 'react';
 import { WebView } from 'react-native-webview';
 import { actions } from './actions';
 import { messages } from './messages';
@@ -7,224 +7,167 @@ import { createHTML } from './editor/createHTML';
 
 const PlatformIOS = Platform.OS === 'ios';
 
-function buildCreateHTMLOptions(props: any) {
-  const {
-    editorStyle: {
-      backgroundColor,
-      color,
-      placeholderColor,
-      initialCSSText,
-      cssText,
-      contentCSSText,
-      caretColor,
-    } = {},
-    html,
-    pasteAsPlainText,
-    onPaste,
-    onKeyUp,
-    onKeyDown,
-    onInput,
-    enterKeyHint,
-    autoCapitalize,
-    autoCorrect,
-    defaultParagraphSeparator,
-    firstFocusEnd,
-    useContainer,
-    initialFocus,
-    disabled,
-    styleWithCSS,
-    useCharacter,
-    defaultHttps,
-  } = props;
-  return {
-    backgroundColor,
-    color,
-    caretColor,
-    placeholderColor,
-    initialCSSText,
-    cssText,
-    contentCSSText,
-    pasteAsPlainText,
-    pasteListener: !!onPaste,
-    keyUpListener: !!onKeyUp,
-    keyDownListener: !!onKeyDown,
-    inputListener: !!onInput,
-    enterKeyHint,
-    autoCapitalize,
-    autoCorrect,
-    initialFocus: initialFocus && !disabled,
-    defaultParagraphSeparator,
-    firstFocusEnd,
-    useContainer,
-    styleWithCSS,
-    useCharacter,
-    defaultHttps,
+export default class RichTextEditor extends Component {
+  static defaultProps = {
+    contentInset: {},
+    style: {},
+    placeholder: '',
+    initialContentHTML: '',
+    initialFocus: false,
+    disabled: false,
+    useContainer: true,
+    pasteAsPlainText: false,
+    autoCapitalize: 'off',
+    defaultParagraphSeparator: 'div',
+    editorInitializedCallback: () => {},
+    initialHeight: 0,
+    dataDetectorTypes: ['none'],
   };
-}
 
-export interface RichTextEditorRef {
-  registerToolbar: (listener: (items: string[]) => void) => void;
-  setContentFocusHandler: (listener: () => void) => void;
-  setContentHTML: (html: string) => void;
-  setPlaceholder: (placeholder: string) => void;
-  setContentStyle: (styles: any) => void;
-  setDisable: (dis: boolean) => void;
-  blurContentEditor: () => void;
-  focusContentEditor: () => void;
-  showAndroidKeyboard: () => void;
-  insertImage: (attributes: any, style?: any) => void;
-  insertVideo: (attributes: any, style?: any) => void;
-  insertText: (text: string) => void;
-  insertHTML: (html: string) => void;
-  insertLink: (title: string, url: string) => void;
-  injectJavascript: (script: string) => void;
-  preCode: (type: any) => void;
-  setFontSize: (size: any) => void;
-  setForeColor: (color: string) => void;
-  setHiliteColor: (color: string) => void;
-  setFontName: (name: string) => void;
-  commandDOM: (command: any) => void;
-  command: (command: any) => void;
-  dismissKeyboard: () => void;
-  getContentHtml: () => Promise<string>;
-  isKeyboardOpen: boolean;
-  sendAction: (action: string) => void;
-}
-
-export const RichTextEditor = forwardRef<RichTextEditorRef, any>(function RichTextEditor(
-  {
-    contentInset = {},
-    style = {},
-    placeholder = '',
-    initialContentHTML = '',
-    initialFocus = false,
-    disabled = false,
-    useContainer = true,
-    pasteAsPlainText = false,
-    autoCapitalize = 'off',
-    defaultParagraphSeparator = 'div',
-    editorInitializedCallback = () => {},
-    initialHeight = 0,
-    dataDetectorTypes = ['none'],
-    editorStyle,
-    html: htmlProp,
-    onFocus,
-    onBlur,
-    onChange,
-    onPaste,
-    onKeyUp,
-    onKeyDown,
-    onInput,
-    onMessage,
-    onCursorPosition,
-    onLink,
-    onHeightChange,
-    ...rest
-  },
-  ref,
-) {
-  const webRef = useRef<WebView>(null);
-  const inputRef = useRef<TextInput>(null);
-  const selectionChangeListeners = useRef<Array<(items: string[]) => void>>([]);
-  const focusListeners = useRef<Array<() => void>>([]);
-  const contentResolveRef = useRef<((value: string) => void) | undefined>();
-  const contentRejectRef = useRef<((reason?: any) => void) | undefined>();
-  const pendingContentHtmlRef = useRef<ReturnType<typeof setTimeout> | undefined>();
-  const unmountRef = useRef(false);
-  const keyOpenRef = useRef(false);
-  const focusRef = useRef(false);
-  const layoutRef = useRef<any>({});
-
-  const viewHTML = useMemo(
-    () =>
-      htmlProp || createHTML(buildCreateHTMLOptions({
-        editorStyle,
-        html: htmlProp,
-        pasteAsPlainText,
-        onPaste,
-        onKeyUp,
-        onKeyDown,
-        onInput,
-        enterKeyHint: (rest as any).enterKeyHint,
-        autoCapitalize,
-        autoCorrect: (rest as any).autoCorrect,
-        defaultParagraphSeparator,
-        firstFocusEnd: (rest as any).firstFocusEnd,
-        useContainer,
-        initialFocus,
-        disabled,
-        styleWithCSS: (rest as any).styleWithCSS,
-        useCharacter: (rest as any).useCharacter,
-        defaultHttps: (rest as any).defaultHttps,
-      })),
-    [], // eslint-disable-line react-hooks/exhaustive-deps -- intentional: only from initial props
-  );
-
-  const [height, setHeight] = useState(initialHeight);
-
-  useEffect(() => {
-    unmountRef.current = false;
-    const keyboardShow = () => {
-      keyOpenRef.current = true;
+  constructor(props) {
+    super(props);
+    let that = this;
+    that.renderWebView = that.renderWebView.bind(that);
+    that.onMessage = that.onMessage.bind(that);
+    that.sendAction = that.sendAction.bind(that);
+    that.registerToolbar = that.registerToolbar.bind(that);
+    that._onKeyboardWillShow = that._onKeyboardWillShow.bind(that);
+    that._onKeyboardWillHide = that._onKeyboardWillHide.bind(that);
+    that.init = that.init.bind(that);
+    that.setRef = that.setRef.bind(that);
+    that.onViewLayout = that.onViewLayout.bind(that);
+    that.unmount = false;
+    that._keyOpen = false;
+    that._focus = false;
+    that.layout = {};
+    that.selectionChangeListeners = [];
+    const {
+      editorStyle: {
+        backgroundColor,
+        color,
+        placeholderColor,
+        initialCSSText,
+        cssText,
+        contentCSSText,
+        caretColor,
+      } = {},
+      html,
+      pasteAsPlainText,
+      onPaste,
+      onKeyUp,
+      onKeyDown,
+      onInput,
+      enterKeyHint,
+      autoCapitalize,
+      autoCorrect,
+      defaultParagraphSeparator,
+      firstFocusEnd,
+      useContainer,
+      initialHeight,
+      initialFocus,
+      disabled,
+      styleWithCSS,
+      useCharacter,
+      defaultHttps,
+    } = props;
+    that.state = {
+      html: {
+        html:
+          html ||
+          createHTML({
+            backgroundColor,
+            color,
+            caretColor,
+            placeholderColor,
+            initialCSSText,
+            cssText,
+            contentCSSText,
+            pasteAsPlainText,
+            pasteListener: !!onPaste,
+            keyUpListener: !!onKeyUp,
+            keyDownListener: !!onKeyDown,
+            inputListener: !!onInput,
+            enterKeyHint,
+            autoCapitalize,
+            autoCorrect,
+            initialFocus: initialFocus && !disabled,
+            defaultParagraphSeparator,
+            firstFocusEnd,
+            useContainer,
+            styleWithCSS,
+            useCharacter,
+            defaultHttps,
+          }),
+      },
+      keyboardHeight: 0,
+      height: initialHeight,
     };
-    const keyboardHide = () => {
-      keyOpenRef.current = false;
-    };
-    const listeners = PlatformIOS
-      ? [
-          Keyboard.addListener('keyboardWillShow', keyboardShow),
-          Keyboard.addListener('keyboardWillHide', keyboardHide),
-        ]
-      : [
-          Keyboard.addListener('keyboardDidShow', keyboardShow),
-          Keyboard.addListener('keyboardDidHide', keyboardHide),
-        ];
-    return () => {
-      unmountRef.current = true;
-      listeners.forEach(l => l.remove());
-    };
-  }, []);
+    that.focusListeners = [];
+  }
 
-  useEffect(() => {
-    if (editorStyle) {
-      sendAction(actions.content, 'setContentStyle', editorStyle);
-    }
-  }, [editorStyle]);
-
-  useEffect(() => {
-    sendAction(actions.content, 'setDisable', !!disabled);
-  }, [disabled]);
-
-  useEffect(() => {
-    sendAction(actions.content, 'setPlaceholder', placeholder);
-  }, [placeholder]);
-
-  function sendAction(type: string, action?: string, data?: any, options?: any) {
-    const jsonString = JSON.stringify({ type, name: action, data, options });
-    if (unmountRef.current || !webRef.current) return;
-    const webRefAny = webRef.current as any;
-    if (typeof webRefAny.postMessage === 'function') {
-      webRefAny.postMessage(jsonString);
+  componentDidMount() {
+    this.unmount = false;
+    if (PlatformIOS) {
+      this.keyboardEventListeners = [
+        Keyboard.addListener('keyboardWillShow', this._onKeyboardWillShow),
+        Keyboard.addListener('keyboardWillHide', this._onKeyboardWillHide),
+      ];
     } else {
-      webRef.current.injectJavaScript?.(
-        `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(jsonString)} })); true;`,
-      );
+      this.keyboardEventListeners = [
+        Keyboard.addListener('keyboardDidShow', this._onKeyboardWillShow),
+        Keyboard.addListener('keyboardDidHide', this._onKeyboardWillHide),
+      ];
     }
   }
 
-  const handleMessage = (event: any) => {
+  componentWillUnmount() {
+    this.unmount = true;
+    this.keyboardEventListeners.forEach(eventListener => eventListener.remove());
+  }
+
+  _onKeyboardWillShow(event) {
+    this._keyOpen = true;
+    // console.log('!!!!', event);
+    /*const newKeyboardHeight = event.endCoordinates.height;
+        if (this.state.keyboardHeight === newKeyboardHeight) {
+            return;
+        }
+        if (newKeyboardHeight) {
+            this.setEditorAvailableHeightBasedOnKeyboardHeight(newKeyboardHeight);
+        }
+        this.setState({keyboardHeight: newKeyboardHeight});*/
+  }
+
+  _onKeyboardWillHide(event) {
+    this._keyOpen = false;
+    // this.setState({keyboardHeight: 0});
+  }
+
+  /*setEditorAvailableHeightBasedOnKeyboardHeight(keyboardHeight) {
+        const {top = 0, bottom = 0} = this.props.contentInset;
+        const {marginTop = 0, marginBottom = 0} = this.props.style;
+        const spacing = marginTop + marginBottom + top + bottom;
+
+        const editorAvailableHeight = Dimensions.get('window').height - keyboardHeight - spacing;
+        // this.setEditorHeight(editorAvailableHeight);
+    }*/
+
+  onMessage(event) {
+    const that = this;
+    const { onFocus, onBlur, onChange, onPaste, onKeyUp, onKeyDown, onInput, onMessage, onCursorPosition, onLink } =
+      that.props;
     try {
       const message = JSON.parse(event.nativeEvent.data);
       const data = message.data;
       switch (message.type) {
         case messages.CONTENT_HTML_RESPONSE:
-          if (contentResolveRef.current) {
-            contentResolveRef.current(message.data);
-            contentResolveRef.current = undefined;
-            contentRejectRef.current = undefined;
-            if (pendingContentHtmlRef.current) {
-              clearTimeout(pendingContentHtmlRef.current);
-              pendingContentHtmlRef.current = undefined;
+          if (that.contentResolve) {
+            that.contentResolve(message.data);
+            that.contentResolve = undefined;
+            that.contentReject = undefined;
+            if (that.pendingContentHtml) {
+              clearTimeout(that.pendingContentHtml);
+              that.pendingContentHtml = undefined;
             }
           }
           break;
@@ -235,15 +178,18 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, any>(function RichTe
           console.log('FROM EDIT:', ...data);
           break;
         case messages.SELECTION_CHANGE:
-          selectionChangeListeners.current.forEach(listener => listener(message.data));
+          const items = message.data;
+          that.selectionChangeListeners.map(listener => {
+            listener(items);
+          });
           break;
         case messages.CONTENT_FOCUSED:
-          focusRef.current = true;
-          focusListeners.current.forEach(fn => fn());
+          that._focus = true;
+          that.focusListeners.map(da => da()); // Subsequent versions will be deleted
           onFocus?.();
           break;
         case messages.CONTENT_BLUR:
-          focusRef.current = false;
+          that._focus = false;
           onBlur?.();
           break;
         case messages.CONTENT_CHANGE:
@@ -262,192 +208,281 @@ export const RichTextEditor = forwardRef<RichTextEditorRef, any>(function RichTe
           onInput?.(data);
           break;
         case messages.OFFSET_HEIGHT:
-          if (data !== height) {
-            const maxHeight = Math.max(data, initialHeight);
-            if (!unmountRef.current && useContainer && maxHeight >= initialHeight) {
-              setHeight(maxHeight);
-            }
-            onHeightChange?.(data);
-          }
+          that.setWebHeight(data);
           break;
         case messages.OFFSET_Y:
-          const offsetY = Number(Number(data) + (layoutRef.current?.y ?? 0));
-          if (offsetY > 0) onCursorPosition?.(offsetY);
+          let offsetY = Number.parseInt(Number.parseInt(data) + that.layout.y || 0);
+          offsetY > 0 && onCursorPosition(offsetY);
           break;
         default:
           onMessage?.(message);
           break;
       }
-    } catch {
-      // Non-JSON message, ignore
+    } catch (e) {
+      //alert('NON JSON MESSAGE');
     }
-  };
+  }
 
-  const init = () => {
-    if (initialContentHTML) sendAction(actions.content, 'setHtml', initialContentHTML);
-    if (placeholder) sendAction(actions.content, 'setPlaceholder', placeholder);
-    sendAction(actions.content, 'setDisable', !!disabled);
-    editorInitializedCallback();
-    if (initialFocus && !disabled) {
-      if (Platform.OS === 'android') {
-        if (!keyOpenRef.current) inputRef.current?.focus();
-        webRef.current?.requestFocus?.();
+  setWebHeight(height) {
+    const { onHeightChange, useContainer, initialHeight } = this.props;
+    if (height !== this.state.height) {
+      const maxHeight = Math.max(height, initialHeight);
+      if (!this.unmount && useContainer && maxHeight >= initialHeight) {
+        this.setState({ height: maxHeight });
       }
-      sendAction(actions.content, 'focus');
+      onHeightChange && onHeightChange(height);
     }
-    sendAction(actions.init);
-  };
+  }
 
-  useImperativeHandle(ref, () => {
-    const postActionToWebView = sendAction;
-    return {
-    registerToolbar(listener: (items: string[]) => void) {
-      selectionChangeListeners.current = [...selectionChangeListeners.current, listener];
-    },
-    setContentFocusHandler(listener: () => void) {
-      focusListeners.current.push(listener);
-    },
-    setContentHTML(html: string) {
-      sendAction(actions.content, 'setHtml', html);
-    },
-    setPlaceholder(placeholderText: string) {
-      sendAction(actions.content, 'setPlaceholder', placeholderText);
-    },
-    setContentStyle(styles: any) {
-      sendAction(actions.content, 'setContentStyle', styles);
-    },
-    setDisable(dis: boolean) {
-      sendAction(actions.content, 'setDisable', !!dis);
-    },
-    blurContentEditor() {
-      sendAction(actions.content, 'blur');
-    },
-    focusContentEditor() {
-      if (Platform.OS === 'android') {
-        if (!keyOpenRef.current) inputRef.current?.focus();
-        webRef.current?.requestFocus?.();
-      }
-      sendAction(actions.content, 'focus');
-    },
-    showAndroidKeyboard() {
-      if (Platform.OS === 'android') {
-        if (!keyOpenRef.current) inputRef.current?.focus();
-        webRef.current?.requestFocus?.();
-      }
-    },
-    insertImage(attributes: any, styleOpt?: any) {
-      sendAction(actions.insertImage, 'result', attributes, styleOpt);
-    },
-    insertVideo(attributes: any, styleOpt?: any) {
-      sendAction(actions.insertVideo, 'result', attributes, styleOpt);
-    },
-    insertText(text: string) {
-      sendAction(actions.insertText, 'result', text);
-    },
-    insertHTML(html: string) {
-      sendAction(actions.insertHTML, 'result', html);
-    },
-    insertLink(title: string, url: string) {
-      if (url) {
-        if (Platform.OS === 'android') {
-          if (!keyOpenRef.current) inputRef.current?.focus();
-          webRef.current?.requestFocus?.();
-        }
-        sendAction(actions.insertLink, 'result', { title, url });
-      }
-    },
-    injectJavascript(script: string) {
-      return webRef.current?.injectJavaScript?.(script);
-    },
-    preCode(type: any) {
-      sendAction(actions.code, 'result', type);
-    },
-    setFontSize(size: any) {
-      sendAction(actions.fontSize, 'result', size);
-    },
-    setForeColor(color: string) {
-      sendAction(actions.foreColor, 'result', color);
-    },
-    setHiliteColor(color: string) {
-      sendAction(actions.hiliteColor, 'result', color);
-    },
-    setFontName(name: string) {
-      sendAction(actions.fontName, 'result', name);
-    },
-    commandDOM(command: any) {
-      if (command) sendAction(actions.content, 'commandDOM', command);
-    },
-    command(command: any) {
-      if (command) sendAction(actions.content, 'command', command);
-    },
-    dismissKeyboard() {
-      if (focusRef.current) sendAction(actions.content, 'blur');
-      else Keyboard.dismiss();
-    },
-    get isKeyboardOpen() {
-      return keyOpenRef.current;
-    },
-    getContentHtml(): Promise<string> {
-      return new Promise((resolve, reject) => {
-        contentResolveRef.current = resolve;
-        contentRejectRef.current = reject;
-        postActionToWebView(actions.content, 'postHtml');
-        pendingContentHtmlRef.current = setTimeout(() => {
-          if (contentRejectRef.current) contentRejectRef.current('timeout');
-        }, 5000);
-      });
-    },
-    sendAction(action: string) {
-      postActionToWebView(action, 'result');
-    },
-  };
-  });
+  /**
+   * @param {String} type
+   * @param {String} action
+   * @param {any} data
+   * @param [options]
+   * @private
+   */
+  sendAction(type, action, data, options) {
+    let jsonString = JSON.stringify({ type, name: action, data, options });
+    if (!this.unmount && this.webviewBridge) {
+      this.webviewBridge.postMessage(jsonString);
+    }
+  }
 
-  const onViewLayout = ({ nativeEvent: { layout } }: any) => {
-    layoutRef.current = layout;
-  };
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    const { editorStyle, disabled, placeholder } = this.props;
+    if (prevProps.editorStyle !== editorStyle) {
+      editorStyle && this.setContentStyle(editorStyle);
+    }
+    if (disabled !== prevProps.disabled) {
+      this.setDisable(disabled);
+    }
+    if (placeholder !== prevProps.placeholder) {
+      this.setPlaceholder(placeholder);
+    }
+  }
 
-  const renderWebView = () => (
-    <>
-      <WebView
-        ref={webRef}
-        useWebKit
-        scrollEnabled={false}
-        hideKeyboardAccessoryView
-        keyboardDisplayRequiresUserAction={false}
-        nestedScrollEnabled={!useContainer}
-        style={[styles.webview, style]}
-        {...rest}
-        onMessage={handleMessage}
-        originWhitelist={['*']}
-        dataDetectorTypes={dataDetectorTypes}
-        domStorageEnabled={false}
-        bounces={false}
-        javaScriptEnabled
-        source={{ html: typeof viewHTML === 'string' ? viewHTML : (viewHTML as any)?.html ?? '' }}
-        onLoad={init}
-        onShouldStartLoadWithRequest={(event: any) => {
-          if (event.url !== 'about:blank') {
-            webRef.current?.stopLoading?.();
-            Linking?.openURL?.(event.url);
-            return false;
-          }
-          return true;
-        }}
-      />
-      {Platform.OS === 'android' && <TextInput ref={inputRef} style={styles._input} />}
-    </>
-  );
+  setRef(ref) {
+    this.webviewBridge = ref;
+  }
 
-  if (useContainer) {
+  renderWebView() {
+    let that = this;
+    const { html, editorStyle, useContainer, style, onLink, dataDetectorTypes, ...rest } = that.props;
+    const { html: viewHTML } = that.state;
     return (
-      <View style={[style, { height }]} onLayout={onViewLayout}>
-        {renderWebView()}
-      </View>
+      <>
+        <WebView
+          useWebKit={true}
+          scrollEnabled={false}
+          hideKeyboardAccessoryView={true}
+          keyboardDisplayRequiresUserAction={false}
+          nestedScrollEnabled={!useContainer}
+          style={[styles.webview, style]}
+          {...rest}
+          ref={that.setRef}
+          onMessage={that.onMessage}
+          originWhitelist={['*']}
+          dataDetectorTypes={dataDetectorTypes}
+          domStorageEnabled={false}
+          bounces={false}
+          javaScriptEnabled={true}
+          source={viewHTML}
+          onLoad={that.init}
+          onShouldStartLoadWithRequest={event => {
+            if (event.url !== 'about:blank') {
+              this.webviewBridge?.stopLoading();
+              Linking?.openURL(event.url);
+              return false;
+            }
+            return true;
+          }}
+        />
+        {Platform.OS === 'android' && <TextInput ref={ref => (that._input = ref)} style={styles._input} />}
+      </>
     );
   }
-  return renderWebView();
-});
+
+  onViewLayout({ nativeEvent: { layout } }) {
+    // const {x, y, width, height} = layout;
+    this.layout = layout;
+  }
+
+  render() {
+    let { height } = this.state;
+
+    // useContainer is an optional prop with default value of true
+    // If set to true, it will use a View wrapper with styles and height.
+    // If set to false, it will not use a View wrapper
+    const { useContainer, style } = this.props;
+    return useContainer ? (
+      <View style={[style, { height }]} onLayout={this.onViewLayout}>
+        {this.renderWebView()}
+      </View>
+    ) : (
+      this.renderWebView()
+    );
+  }
+
+  //-------------------------------------------------------------------------------
+  //--------------- Public API
+
+  registerToolbar(listener) {
+    this.selectionChangeListeners = [...this.selectionChangeListeners, listener];
+  }
+
+  /**
+   * Subsequent versions will be deleted, please use onFocus
+   * @deprecated remove
+   * @param listener
+   */
+  setContentFocusHandler(listener) {
+    this.focusListeners.push(listener);
+  }
+
+  setContentHTML(html) {
+    this.sendAction(actions.content, 'setHtml', html);
+  }
+
+  setPlaceholder(placeholder) {
+    this.sendAction(actions.content, 'setPlaceholder', placeholder);
+  }
+
+  setContentStyle(styles) {
+    this.sendAction(actions.content, 'setContentStyle', styles);
+  }
+
+  setDisable(dis) {
+    this.sendAction(actions.content, 'setDisable', !!dis);
+  }
+
+  blurContentEditor() {
+    this.sendAction(actions.content, 'blur');
+  }
+
+  focusContentEditor() {
+    this.showAndroidKeyboard();
+    this.sendAction(actions.content, 'focus');
+  }
+
+  /**
+   * open android keyboard
+   * @platform android
+   */
+  showAndroidKeyboard() {
+    let that = this;
+    if (Platform.OS === 'android') {
+      !that._keyOpen && that._input.focus();
+      that.webviewBridge?.requestFocus?.();
+    }
+  }
+
+  /**
+   * @param attributes
+   * @param [style]
+   */
+  insertImage(attributes, style) {
+    this.sendAction(actions.insertImage, 'result', attributes, style);
+  }
+
+  /**
+   * @param attributes
+   * @param [style]
+   */
+  insertVideo(attributes, style) {
+    this.sendAction(actions.insertVideo, 'result', attributes, style);
+  }
+
+  insertText(text) {
+    this.sendAction(actions.insertText, 'result', text);
+  }
+
+  insertHTML(html) {
+    this.sendAction(actions.insertHTML, 'result', html);
+  }
+
+  insertLink(title, url) {
+    if (url) {
+      this.showAndroidKeyboard();
+      this.sendAction(actions.insertLink, 'result', { title, url });
+    }
+  }
+
+  injectJavascript(script) {
+    return this.webviewBridge.injectJavaScript(script);
+  }
+
+  preCode(type) {
+    this.sendAction(actions.code, 'result', type);
+  }
+
+  setFontSize(size) {
+    this.sendAction(actions.fontSize, 'result', size);
+  }
+
+  setForeColor(color) {
+    this.sendAction(actions.foreColor, 'result', color);
+  }
+
+  setHiliteColor(color) {
+    this.sendAction(actions.hiliteColor, 'result', color);
+  }
+
+  setFontName(name) {
+    this.sendAction(actions.fontName, 'result', name);
+  }
+
+  commandDOM(command) {
+    if (command) {
+      this.sendAction(actions.content, 'commandDOM', command);
+    }
+  }
+
+  command(command) {
+    if (command) {
+      this.sendAction(actions.content, 'command', command);
+    }
+  }
+
+  dismissKeyboard() {
+    this._focus ? this.blurContentEditor() : Keyboard.dismiss();
+  }
+
+  get isKeyboardOpen() {
+    return this._keyOpen;
+  }
+
+  init() {
+    let that = this;
+    const { initialFocus, initialContentHTML, placeholder, editorInitializedCallback, disabled } = that.props;
+    initialContentHTML && that.setContentHTML(initialContentHTML);
+    placeholder && that.setPlaceholder(placeholder);
+    that.setDisable(disabled);
+    editorInitializedCallback();
+
+    // initial request focus
+    initialFocus && !disabled && that.focusContentEditor();
+    // no visible ?
+    that.sendAction(actions.init);
+  }
+
+  /**
+   * @deprecated please use onChange
+   * @returns {Promise}
+   */
+  async getContentHtml() {
+    return new Promise((resolve, reject) => {
+      this.contentResolve = resolve;
+      this.contentReject = reject;
+      this.sendAction(actions.content, 'postHtml');
+
+      this.pendingContentHtml = setTimeout(() => {
+        if (this.contentReject) {
+          this.contentReject('timeout');
+        }
+      }, 5000);
+    });
+  }
+}
 
 const styles = StyleSheet.create({
   _input: {
@@ -458,10 +493,8 @@ const styles = StyleSheet.create({
     bottom: -999,
     left: -999,
   },
+
   webview: {
     backgroundColor: 'transparent',
   },
 });
-
-export default RichTextEditor;
-export { RichTextEditor as RichEditor };
