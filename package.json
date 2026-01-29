@@ -1,0 +1,30 @@
+{
+  "name": "rn-rich-text-editor",
+  "version": "0.0.1",
+  "description": "A rich text editor component for React Native",
+  "keywords": ["react-native", "rich-editor", "text-editor", "webview"],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-webview": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
