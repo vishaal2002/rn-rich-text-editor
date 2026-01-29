@@ -4,50 +4,46 @@ import { actions } from './actions';
 
 export const defaultActions = [
   actions.keyboard,
-  actions.undo,
-  actions.redo,
   actions.setBold,
   actions.setItalic,
   actions.setUnderline,
-  actions.strikethrough,
   actions.removeFormat,
-  actions.insertUnorderedList,
-  actions.insertOrderedList,
-  actions.checkboxList,
-  actions.blockquote,
-  actions.code,
+  actions.insertBulletsList,
   actions.indent,
   actions.outdent,
-  actions.justifyLeft,
-  actions.justifyCenter,
-  actions.justifyRight,
-  actions.justifyFull,
   actions.insertLink,
 ];
 
-// Icons from img folder - direct require now that icons exist
 function getDefaultIcon(): Record<string, number> {
   return {
+    [actions.insertImage]: require('./img/image.png'),
+    [actions.keyboard]: require('./img/keyboard.png'),
     [actions.setBold]: require('./img/bold.png'),
     [actions.setItalic]: require('./img/italic.png'),
-    [actions.setUnderline]: require('./img/underline.png'),
-    [actions.strikethrough]: require('./img/strikethrough.png'),
-    [actions.removeFormat]: require('./img/remove_format.png'),
-    [actions.checkboxList]: require('./img/checkbox.png'),
-    [actions.insertUnorderedList]: require('./img/ul.png'),
+    [actions.setSubscript]: require('./img/subscript.png'),
+    [actions.setSuperscript]: require('./img/superscript.png'),
+    [actions.insertBulletsList]: require('./img/ul.png'),
     [actions.insertOrderedList]: require('./img/ol.png'),
-    [actions.blockquote]: require('./img/blockquote.png'),
-    [actions.code]: require('./img/code.png'),
     [actions.insertLink]: require('./img/link.png'),
-    [actions.indent]: require('./img/indent.png'),
-    [actions.outdent]: require('./img/outdent.png'),
-    [actions.justifyLeft]: require('./img/justify_left.png'),
-    [actions.justifyCenter]: require('./img/justify_center.png'),
-    [actions.justifyRight]: require('./img/justify_right.png'),
-    [actions.justifyFull]: require('./img/justify_full.png'),
+    [actions.setStrikethrough]: require('./img/strikethrough.png'),
+    [actions.setUnderline]: require('./img/underline.png'),
+    [actions.heading1]: require('./img/heading1.png'),
+    [actions.insertVideo]: require('./img/video.png'),
+    [actions.removeFormat]: require('./img/remove_format.png'),
     [actions.undo]: require('./img/undo.png'),
     [actions.redo]: require('./img/redo.png'),
-    [actions.keyboard]: require('./img/keyboard.png'),
+    [actions.checkboxList]: require('./img/checkbox.png'),
+    [actions.table]: require('./img/table.png'),
+    [actions.code]: require('./img/code.png'),
+    [actions.outdent]: require('./img/outdent.png'),
+    [actions.indent]: require('./img/indent.png'),
+    [actions.alignLeft]: require('./img/justify_left.png'),
+    [actions.alignCenter]: require('./img/justify_center.png'),
+    [actions.alignRight]: require('./img/justify_right.png'),
+    [actions.alignFull]: require('./img/justify_full.png'),
+    [actions.blockquote]: require('./img/blockquote.png'),
+    [actions.line]: require('./img/line.png'),
+    [actions.fontSize]: require('./img/fontSize.png'),
   };
 }
 
@@ -76,10 +72,11 @@ interface RichToolbarProps {
   flatContainerStyle?: any;
   horizontal?: boolean;
   children?: React.ReactNode;
+  [key: string]: any;
 }
 
 export function RichToolbar({
-  editor,
+  editor: editorProp,
   getEditor,
   actions: actionsProp = defaultActions,
   disabled = false,
@@ -101,33 +98,27 @@ export function RichToolbar({
   flatContainerStyle,
   horizontal = true,
   children,
+  ...restProps
 }: Readonly<RichToolbarProps>) {
   const editorRef = useRef<any>(null);
   const [items, setItems] = useState<string[]>([]);
-  const [data, setData] = useState<Array<{ action: string; selected: boolean }>>(
-    actionsProp.map(action => ({ action, selected: false })),
-  );
 
-
-  const setSelectedItems = (newItems: string[]) => {
-    setItems(prev => (prev === newItems ? prev : newItems));
-    setData(actionsProp.map(action => ({
-      action,
-      selected: newItems.includes(action) || newItems.some(item => item && item === action),
-    })));
-  };
+  const data = actionsProp.map(action => ({
+    action,
+    selected: items.includes(action) || items.some(item => item && item === action),
+  }));
 
   const mount = () => {
-    const editorInstance = editor?.current ?? getEditor?.();
-    if (!editorInstance) {
-      if (process.env.NODE_ENV !== 'production') {
+    const editor = editorProp?.current ?? getEditor?.();
+    if (!editor) {
+      if (__DEV__) {
         console.warn(
-          'Toolbar has no editor. Please make sure the prop editor or getEditor returns a ref to the editor component.',
+          'Toolbar has no editor. Please make sure the prop getEditor or editor returns a ref to the editor component.',
         );
       }
     } else {
-      editorInstance.registerToolbar?.(setSelectedItems);
-      editorRef.current = editorInstance;
+      editor.registerToolbar?.((selectedItems: string[]) => setItems(selectedItems));
+      editorRef.current = editor;
     }
   };
 
@@ -142,21 +133,21 @@ export function RichToolbar({
   };
 
   const handleKeyboard = () => {
-    const editorInstance = editorRef.current;
-    if (!editorInstance) {
+    const editor = editorRef.current;
+    if (!editor) {
       mount();
       return;
     }
-    if (editorInstance.isKeyboardOpen) {
-      editorInstance.dismissKeyboard?.();
+    if (editor.isKeyboardOpen) {
+      editor.dismissKeyboard?.();
     } else {
-      editorInstance.focusContentEditor?.();
+      editor.focusContentEditor?.();
     }
   };
 
   const onPress = (action: string) => {
-    const editorInstance = editorRef.current;
-    if (!editorInstance) {
+    const editor = editorRef.current;
+    if (!editor) {
       mount();
       return;
     }
@@ -167,43 +158,52 @@ export function RichToolbar({
           onInsertLink();
           return;
         }
-        editorInstance.showAndroidKeyboard?.();
-        editorInstance.sendAction?.(action);
+        editor.showAndroidKeyboard?.();
+        editor.sendAction?.(action);
+        break;
+      case actions.insertImage:
+        onPressAddImage?.();
+        break;
+      case actions.insertVideo:
+        insertVideo?.();
         break;
       case actions.keyboard:
         handleKeyboard();
         break;
       case actions.setBold:
       case actions.setItalic:
-      case actions.setUnderline:
-      case actions.strikethrough:
-      case actions.removeFormat:
-      case actions.checkboxList:
-      case actions.insertUnorderedList:
-      case actions.insertOrderedList:
-      case actions.blockquote:
-      case actions.code:
-      case actions.indent:
-      case actions.outdent:
-      case actions.justifyLeft:
-      case actions.justifyCenter:
-      case actions.justifyRight:
-      case actions.justifyFull:
       case actions.undo:
       case actions.redo:
-        editorInstance.showAndroidKeyboard?.();
-        editorInstance.sendAction?.(action);
+      case actions.insertBulletsList:
+      case actions.insertOrderedList:
+      case actions.checkboxList:
+      case actions.setUnderline:
+      case actions.heading1:
+      case actions.heading2:
+      case actions.heading3:
+      case actions.heading4:
+      case actions.heading5:
+      case actions.heading6:
+      case actions.code:
+      case actions.blockquote:
+      case actions.line:
+      case actions.setParagraph:
+      case actions.removeFormat:
+      case actions.alignLeft:
+      case actions.alignCenter:
+      case actions.alignRight:
+      case actions.alignFull:
+      case actions.setSubscript:
+      case actions.setSuperscript:
+      case actions.setStrikethrough:
+      case actions.setHR:
+      case actions.indent:
+      case actions.outdent:
+        editor.showAndroidKeyboard?.();
+        editor.sendAction?.(action);
         break;
       default:
-        if (action === 'image' && onPressAddImage) {
-          onPressAddImage();
-          return;
-        }
-        if (action === 'video' && insertVideo) {
-          insertVideo();
-          return;
-        }
-        editorInstance.sendAction?.(action);
+        (restProps as any)[action]?.();
         break;
     }
   };
@@ -236,9 +236,7 @@ export function RichToolbar({
               }}
             />
           )
-        ) : (
-          <View style={{ padding: 4 }} />
-        )}
+        ) : null}
       </TouchableOpacity>
     );
   };
@@ -280,3 +278,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export default RichToolbar;
