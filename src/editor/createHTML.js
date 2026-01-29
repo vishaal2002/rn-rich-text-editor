@@ -76,7 +76,7 @@ function createHTML(options = {}) {
 <body>
 <div class="content"><div id="editor" class="pell"/></div>
 <script>
-    var __DEV__ = !!${(window as any).__DEV__};
+    var __DEV__ = !!${(window).__DEV__};
     var _ = (function (exports) {
         var anchorNode, focusNode, anchorOffset, focusOffset, _focusCollapse = false, cNode;
         var _log = console.log;
