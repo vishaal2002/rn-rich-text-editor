@@ -102,6 +102,7 @@ export const RichEditor = forwardRef((props: any, ref) => {
         scrollEnabled={false}
         source={createHTML()}
         onMessage={handleMessage}
+        style={[styles.editorWebView, props.style]}
         {...props.webViewProps}
       />
       {Platform.OS === 'android' && (
@@ -112,6 +113,10 @@ export const RichEditor = forwardRef((props: any, ref) => {
 });
 
 const styles = StyleSheet.create({
+  editorWebView: {
+    minHeight: 150,
+    backgroundColor: '#fff',
+  },
   hiddenInput: {
     position: 'absolute',
     width: 1,

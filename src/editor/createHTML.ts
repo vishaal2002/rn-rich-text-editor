@@ -8,11 +8,19 @@ export function createHTML() {
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <style>
-  body { margin:0; font-family: system-ui; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: system-ui;
+    min-height: 200px;
+    height: 100%;
+  }
   #editor {
     padding: 12px;
-    min-height: 100%;
+    min-height: 150px;
     outline: none;
+    -webkit-user-select: text;
+    user-select: text;
   }
   [placeholder]:empty::before {
     content: attr(placeholder);
@@ -57,11 +65,48 @@ ${getContentCSS()}
   window.addEventListener('message', e => {
     const msg = JSON.parse(e.data);
     const type = msg.type;
-    
-    if (type === 'bold') document.execCommand('bold');
-    else if (type === 'italic') document.execCommand('italic');
-    else if (type === 'underline') document.execCommand('underline');
-    else if (type === 'link') {
+
+    if (type === 'focus') {
+      editor.focus();
+    } else if (type === 'blur') {
+      editor.blur();
+    } else if (type === 'bold') {
+      document.execCommand('bold');
+    } else if (type === 'italic') {
+      document.execCommand('italic');
+    } else if (type === 'underline') {
+      document.execCommand('underline');
+    } else if (type === 'strikethrough') {
+      document.execCommand('strikeThrough');
+    } else if (type === 'removeFormat') {
+      document.execCommand('removeFormat');
+    } else if (type === 'undo') {
+      document.execCommand('undo');
+    } else if (type === 'redo') {
+      document.execCommand('redo');
+    } else if (type === 'insertUnorderedList') {
+      document.execCommand('insertUnorderedList');
+    } else if (type === 'insertOrderedList') {
+      document.execCommand('insertOrderedList');
+    } else if (type === 'checkboxList') {
+      document.execCommand('insertOrderedList');
+    } else if (type === 'indent') {
+      document.execCommand('indent');
+    } else if (type === 'outdent') {
+      document.execCommand('outdent');
+    } else if (type === 'justifyLeft') {
+      document.execCommand('justifyLeft');
+    } else if (type === 'justifyCenter') {
+      document.execCommand('justifyCenter');
+    } else if (type === 'justifyRight') {
+      document.execCommand('justifyRight');
+    } else if (type === 'justifyFull') {
+      document.execCommand('justifyFull');
+    } else if (type === 'blockquote') {
+      document.execCommand('formatBlock', false, 'blockquote');
+    } else if (type === 'code') {
+      document.execCommand('formatBlock', false, 'pre');
+    } else if (type === 'link') {
       const url = prompt('Enter link URL:');
       if (url) {
         const sel = window.getSelection();
@@ -72,19 +117,6 @@ ${getContentCSS()}
         range.deleteContents();
         range.insertNode(link);
       }
-    }
-    else if (type === 'checkboxList') {
-      if (document.queryCommandState('insertOrderedList')) {
-        document.execCommand('insertOrderedList');
-      } else {
-        document.execCommand('insertOrderedList');
-      }
-    }
-    else if (type === 'focus') {
-      editor.focus();
-    }
-    else if (type === 'blur') {
-      editor.blur();
     }
   });
 </script>

@@ -1,10 +1,24 @@
 export const actions = {
-    setBold: 'bold',
-    setItalic: 'italic',
-    setUnderline: 'underline',
-    checkboxList: 'checkboxList',
-    insertLink: 'link',
-    keyboard: 'keyboard',
-    init: 'init'
-  } as const;
+  setBold: 'bold',
+  setItalic: 'italic',
+  setUnderline: 'underline',
+  strikethrough: 'strikethrough',
+  removeFormat: 'removeFormat',
+  checkboxList: 'checkboxList',
+  insertUnorderedList: 'insertUnorderedList',
+  insertOrderedList: 'insertOrderedList',
+  blockquote: 'blockquote',
+  code: 'code',
+  insertLink: 'link',
+  indent: 'indent',
+  outdent: 'outdent',
+  justifyLeft: 'justifyLeft',
+  justifyCenter: 'justifyCenter',
+  justifyRight: 'justifyRight',
+  justifyFull: 'justifyFull',
+  undo: 'undo',
+  redo: 'redo',
+  keyboard: 'keyboard',
+  init: 'init',
+} as const;
   

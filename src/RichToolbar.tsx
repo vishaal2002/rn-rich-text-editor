@@ -4,10 +4,24 @@ import { actions } from './actions';
 
 export const defaultActions = [
   actions.keyboard,
+  actions.undo,
+  actions.redo,
   actions.setBold,
   actions.setItalic,
   actions.setUnderline,
+  actions.strikethrough,
+  actions.removeFormat,
+  actions.insertUnorderedList,
+  actions.insertOrderedList,
   actions.checkboxList,
+  actions.blockquote,
+  actions.code,
+  actions.indent,
+  actions.outdent,
+  actions.justifyLeft,
+  actions.justifyCenter,
+  actions.justifyRight,
+  actions.justifyFull,
   actions.insertLink,
 ];
 
@@ -17,8 +31,22 @@ function getDefaultIcon(): Record<string, number> {
     [actions.setBold]: require('./img/bold.png'),
     [actions.setItalic]: require('./img/italic.png'),
     [actions.setUnderline]: require('./img/underline.png'),
+    [actions.strikethrough]: require('./img/strikethrough.png'),
+    [actions.removeFormat]: require('./img/remove_format.png'),
     [actions.checkboxList]: require('./img/checkbox.png'),
+    [actions.insertUnorderedList]: require('./img/ul.png'),
+    [actions.insertOrderedList]: require('./img/ol.png'),
+    [actions.blockquote]: require('./img/blockquote.png'),
+    [actions.code]: require('./img/code.png'),
     [actions.insertLink]: require('./img/link.png'),
+    [actions.indent]: require('./img/indent.png'),
+    [actions.outdent]: require('./img/outdent.png'),
+    [actions.justifyLeft]: require('./img/justify_left.png'),
+    [actions.justifyCenter]: require('./img/justify_center.png'),
+    [actions.justifyRight]: require('./img/justify_right.png'),
+    [actions.justifyFull]: require('./img/justify_full.png'),
+    [actions.undo]: require('./img/undo.png'),
+    [actions.redo]: require('./img/redo.png'),
     [actions.keyboard]: require('./img/keyboard.png'),
   };
 }
@@ -148,7 +176,21 @@ export function RichToolbar({
       case actions.setBold:
       case actions.setItalic:
       case actions.setUnderline:
+      case actions.strikethrough:
+      case actions.removeFormat:
       case actions.checkboxList:
+      case actions.insertUnorderedList:
+      case actions.insertOrderedList:
+      case actions.blockquote:
+      case actions.code:
+      case actions.indent:
+      case actions.outdent:
+      case actions.justifyLeft:
+      case actions.justifyCenter:
+      case actions.justifyRight:
+      case actions.justifyFull:
+      case actions.undo:
+      case actions.redo:
         editorInstance.showAndroidKeyboard?.();
         editorInstance.sendAction?.(action);
         break;
