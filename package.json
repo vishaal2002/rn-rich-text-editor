@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/vishaal2002/rn-rich-text-editor.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
