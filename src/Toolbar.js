@@ -372,7 +372,17 @@ export default class Toolbar extends Component {
         onPress={() => that._onPress(action)}>
         {icon ? (
           typeof icon === 'function' ? (
-            icon({ selected, disabled, tintColor, iconSize, iconGap })
+            icon({
+              selected,
+              disabled,
+              tintColor,
+              iconSize,
+              iconGap,
+              width: iconSize,
+              height: iconSize,
+              color: tintColor,
+              fill: tintColor,
+            })
           ) : (
             <Image
               source={icon}
@@ -419,6 +429,10 @@ export default class Toolbar extends Component {
               tintColor: tintColor,
               iconSize,
               iconGap,
+              width: iconSize,
+              height: iconSize,
+              color: tintColor,
+              fill: tintColor,
             })
           ) : (
             <Image
@@ -502,8 +516,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderBottomWidth: 1,
-    borderTopLeftRadius: BORDER_RADIUS,
-    borderTopRightRadius: BORDER_RADIUS,
+    borderBottomLeftRadius: BORDER_RADIUS,
+    borderBottomRightRadius: BORDER_RADIUS,
   },
 
   item: {

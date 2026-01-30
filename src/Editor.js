@@ -523,11 +523,12 @@ const BORDER_RADIUS = 6;
 
 const editorBorderStyle = {
   borderColor: BORDER_COLOR,
+  borderTopWidth: 1,
   borderLeftWidth: 1,
   borderRightWidth: 1,
   borderBottomWidth: 1,
-  borderBottomLeftRadius: BORDER_RADIUS,
-  borderBottomRightRadius: BORDER_RADIUS,
+  borderTopLeftRadius: BORDER_RADIUS,
+  borderTopRightRadius: BORDER_RADIUS,
 };
 
 const styles = StyleSheet.create({

@@ -31,6 +31,8 @@ Make sure you have these installed:
 npm install react react-native react-native-webview
 ```
 
+If your app already has `react-native-svg-transformer` (e.g. in devDependencies), toolbar SVG icons (e.g. italic) work with no extra setup. Install `react-native-svg` for runtime.
+
 ## Quick Start
 
 ```tsx
