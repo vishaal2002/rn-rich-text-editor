@@ -70,6 +70,7 @@ export interface ToolbarProps {
   getEditor?: () => EditorRef | null;
   actions?: string[];
   disabled?: boolean;
+  readOnly?: boolean;
   iconTint?: string;
   selectedIconTint?: string;
   disabledIconTint?: string;

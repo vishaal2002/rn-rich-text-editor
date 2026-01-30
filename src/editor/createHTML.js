@@ -756,18 +756,32 @@ function createHTML(options = {}) {
 }
 
 /**
+ * Escapes a string for safe embedding inside a JavaScript double-quoted string in HTML.
+ */
+function escapeForScript(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
+    .replace(/<\/script/gi, '<\\/script');
+}
+
+/**
  * Creates minimal HTML for read-only display: content in a fixed-height scrollable box.
- * No editor, no toolbar. Content is injected via script for safety.
- * Caller must replace __READONLY_CONTENT_PLACEHOLDER__ with JSON.stringify(content).
+ * No editor, no toolbar. Content is escaped and embedded in the template.
  */
 function createReadOnlyHTML(options = {}) {
   const {
+    content = '',
     backgroundColor = '#FFF',
     color = '#000033',
     contentCSSText = '',
     cssText = '',
     initialCSSText = '',
   } = options;
+  const escapedContent = escapeForScript(content);
   return `
 <!DOCTYPE html>
 <html>
@@ -793,10 +807,10 @@ function createReadOnlyHTML(options = {}) {
     <div id="readonly-content" class="readonly-container"></div>
     <script>
         (function() {
-            var content = __READONLY_CONTENT_PLACEHOLDER__;
+            var content = "${escapedContent}";
             var el = document.getElementById('readonly-content');
-            if (el && content != null) {
-                el.innerHTML = typeof content === 'string' ? content : '';
+            if (el) {
+                el.innerHTML = content;
             }
         })();
     </script>

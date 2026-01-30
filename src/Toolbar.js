@@ -63,6 +63,7 @@ export default class Toolbar extends Component {
   static defaultProps = {
     actions: defaultActions,
     disabled: false,
+    readOnly: false,
     iconTint: '#71787F',
     iconSize: 20,
     iconGap: 16,
@@ -373,7 +374,10 @@ export default class Toolbar extends Component {
   }
 
   render() {
-    const { style, disabled, children, flatContainerStyle, horizontal = true } = this.props;
+    const { style, disabled, readOnly, children, flatContainerStyle, horizontal = true } = this.props;
+    if (readOnly) {
+      return null;
+    }
     const vStyle = [styles.barContainer, style, disabled && this._getButtonDisabledStyle()];
     return (
       <View style={vStyle}>

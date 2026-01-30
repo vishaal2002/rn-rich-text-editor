@@ -81,12 +81,13 @@ export default class Editor extends Component {
       html: {
         html: readOnly
           ? createReadOnlyHTML({
+              content: contentForReadOnly,
               backgroundColor,
               color,
               initialCSSText,
               cssText,
               contentCSSText,
-            }).replace('__READONLY_CONTENT_PLACEHOLDER__', JSON.stringify(contentForReadOnly))
+            })
           : (html ||
             createHTML({
               backgroundColor,
@@ -254,17 +255,18 @@ export default class Editor extends Component {
     if (readOnly) {
       const contentChanged = initialContentHTML !== prevProps.initialContentHTML || html !== prevProps.html;
       if (prevProps.readOnly !== readOnly || contentChanged || prevProps.editorStyle !== editorStyle) {
-        const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html && html.html)) || '';
+        const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html?.html)) || '';
         const { backgroundColor, color, initialCSSText, cssText, contentCSSText } = editorStyle || {};
         this.setState({
           html: {
             html: createReadOnlyHTML({
+              content: contentForReadOnly,
               backgroundColor,
               color,
               initialCSSText,
               cssText,
               contentCSSText,
-            }).replace('__READONLY_CONTENT_PLACEHOLDER__', JSON.stringify(contentForReadOnly)),
+            }),
           },
         });
       }
