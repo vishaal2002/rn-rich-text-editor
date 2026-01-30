@@ -31,8 +31,8 @@ function getDefaultIcon() {
   texts[actions.setItalic] = require('./img/italic.png');
   texts[actions.setSubscript] = require('./img/subscript.png');
   texts[actions.setSuperscript] = require('./img/superscript.png');
-  texts[actions.insertBulletsList] = require('./img/ul.png');
-  texts[actions.insertOrderedList] = require('./img/ol.png');
+  texts[actions.insertBulletsList] = require('./img/list.png');
+  texts[actions.insertOrderedList] = require('./img/numbered_list.png');
   texts[actions.insertLink] = require('./img/link.png');
   texts[actions.setStrikethrough] = require('./img/strikethrough.png');
   texts[actions.setUnderline] = require('./img/underline.png');
@@ -45,10 +45,10 @@ function getDefaultIcon() {
   texts[actions.table] = require('./img/table.png');
   texts[actions.code] = require('./img/code.png');
   texts[actions.outdent] = require('./img/outdent.png');
-  texts[actions.indent] = require('./img/indent.png');
-  texts[actions.alignLeft] = require('./img/justify_left.png');
-  texts[actions.alignCenter] = require('./img/justify_center.png');
-  texts[actions.alignRight] = require('./img/justify_right.png');
+  texts[actions.indent] = require('./img/intdent.png');
+  texts[actions.alignLeft] = require('./img/align_left.png');
+  texts[actions.alignCenter] = require('./img/align_center.png');
+  texts[actions.alignRight] = require('./img/align_right.png');
   texts[actions.alignFull] = require('./img/justify_full.png');
   texts[actions.align] = require('./img/justify_left.png');
   texts[actions.blockquote] = require('./img/blockquote.png');
