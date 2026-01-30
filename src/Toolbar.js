@@ -69,7 +69,7 @@ function getDefaultIcon() {
   texts[actions.insertImage] = require('./img/image.png');
   texts[actions.keyboard] = require('./img/keyboard.png');
   texts[actions.setBold] = require('./img/bold.png');
-  texts[actions.setItalic] = require('./img/italic.png');
+  texts[actions.setItalic] = require('./img/italic.svg');
   texts[actions.setSubscript] = require('./img/subscript.png');
   texts[actions.setSuperscript] = require('./img/superscript.png');
   texts[actions.insertBulletsList] = require('./img/list.png');
@@ -489,11 +489,21 @@ export default class Toolbar extends Component {
   }
 }
 
+const BORDER_COLOR = '#C9CED7';
+const BORDER_RADIUS = 6;
+
 const styles = StyleSheet.create({
   barContainer: {
     height: 44,
     backgroundColor: '#efefef',
     alignItems: 'center',
+    borderColor: BORDER_COLOR,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderTopLeftRadius: BORDER_RADIUS,
+    borderTopRightRadius: BORDER_RADIUS,
   },
 
   item: {

@@ -339,11 +339,11 @@ export default class Editor extends Component {
     const errorStyle = errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
     
     return useContainer ? (
-      <View style={[style, { height }, errorStyle]} onLayout={this.onViewLayout}>
+      <View style={[editorBorderStyle, style, { height }, errorStyle]} onLayout={this.onViewLayout}>
         {this.renderWebView()}
       </View>
     ) : (
-      <View style={errorStyle}>
+      <View style={[editorBorderStyle, errorStyle]}>
         {this.renderWebView()}
       </View>
     );
@@ -517,6 +517,18 @@ export default class Editor extends Component {
     });
   }
 }
+
+const BORDER_COLOR = '#C9CED7';
+const BORDER_RADIUS = 6;
+
+const editorBorderStyle = {
+  borderColor: BORDER_COLOR,
+  borderLeftWidth: 1,
+  borderRightWidth: 1,
+  borderBottomWidth: 1,
+  borderBottomLeftRadius: BORDER_RADIUS,
+  borderBottomRightRadius: BORDER_RADIUS,
+};
 
 const styles = StyleSheet.create({
   _input: {
