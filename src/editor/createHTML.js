@@ -757,12 +757,15 @@ function createHTML(options = {}) {
 
 /**
  * Escapes a string for safe embedding inside a JavaScript double-quoted string in HTML.
+ * Newlines and quotes must be escaped or the script will be invalid.
  */
 function escapeForScript(s) {
   if (s == null) return '';
   return String(s)
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029')
     .replace(/<\/script/gi, '<\\/script');
