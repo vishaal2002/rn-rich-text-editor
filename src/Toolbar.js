@@ -2,6 +2,48 @@ import React, { Component } from 'react';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { actions } from './actions';
 
+const FADE_WIDTH = 24;
+const FADE_STRIPS = 5;
+const TOOLBAR_BG = '#efefef';
+
+function hexToRgb(hex) {
+  const match = hex.replace('#', '').match(/.{2}/g);
+  return match ? match.map((x) => parseInt(x, 16)) : [239, 239, 239];
+}
+
+function FadeOverlay({ side, visible, backgroundColor }) {
+  if (!visible) return null;
+  const bg = backgroundColor || TOOLBAR_BG;
+  const rgb = bg.startsWith('rgb')
+    ? bg.match(/\d+/g)?.map(Number) || [239, 239, 239]
+    : hexToRgb(bg);
+  const strips = Array.from({ length: FADE_STRIPS }, (_, i) => {
+    const alpha = ((i + 1) / FADE_STRIPS) * 0.85;
+    const stripWidth = FADE_WIDTH / FADE_STRIPS;
+    return (
+      <View
+        key={i}
+        style={[
+          styles.fadeStrip,
+          {
+            width: stripWidth,
+            backgroundColor: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`,
+            left: side === 'left' ? FADE_WIDTH - (i + 1) * stripWidth : i * stripWidth,
+          },
+        ]}
+      />
+    );
+  });
+  return (
+    <View
+      style={[styles.fadeOverlay, side === 'right' ? styles.fadeRight : styles.fadeLeft]}
+      pointerEvents="none"
+    >
+      {strips}
+    </View>
+  );
+}
+
 const ALIGN_ACTIONS = [
   actions.alignLeft,
   actions.alignCenter,
@@ -19,7 +61,6 @@ export const defaultActions = [
   actions.indent,
   actions.outdent,
   actions.insertLink,
-  actions.lineHeight,
 ];
 
 function getDefaultIcon() {
@@ -50,11 +91,9 @@ function getDefaultIcon() {
   texts[actions.alignCenter] = require('./img/align_center.png');
   texts[actions.alignRight] = require('./img/align_right.png');
   texts[actions.alignFull] = require('./img/justify_full.png');
-  texts[actions.align] = require('./img/justify_left.png');
+  texts[actions.align] = require('./img/align_left.png');
   texts[actions.blockquote] = require('./img/blockquote.png');
   texts[actions.line] = require('./img/line.png');
-  texts[actions.fontSize] = require('./img/fontSize.png');
-  texts[actions.lineHeight] = require('./img/fontSize.png');
   return texts;
 }
 
@@ -75,6 +114,8 @@ export default class Toolbar extends Component {
     this.state = {
       items: [],
       selectedAlign: null,
+      showLeftFade: false,
+      showRightFade: false,
     };
   }
 
@@ -85,9 +126,48 @@ export default class Toolbar extends Component {
       nextState.actions !== that.state.actions ||
       nextState.data !== that.state.data ||
       nextState.selectedAlign !== that.state.selectedAlign ||
+      nextState.showLeftFade !== that.state.showLeftFade ||
+      nextState.showRightFade !== that.state.showRightFade ||
       nextProps.style !== that.props.style
     );
   }
+
+  _scrollWidth = 0;
+  _layoutWidth = 0;
+
+  _onScroll = (e) => {
+    const scrollX = e.nativeEvent.contentOffset.x;
+    const showLeft = scrollX > 5;
+    const showRight = scrollX + this._layoutWidth < this._scrollWidth - 5;
+    this.setState((s) =>
+      s.showLeftFade !== showLeft || s.showRightFade !== showRight
+        ? { showLeftFade: showLeft, showRightFade: showRight }
+        : null
+    );
+  };
+
+  _onContentSizeChange = (contentWidth) => {
+    this._scrollWidth = contentWidth;
+    this._updateFades();
+  };
+
+  _onLayout = (e) => {
+    this._layoutWidth = e.nativeEvent.layout.width;
+    this._updateFades();
+  };
+
+  _updateFades = () => {
+    if (this._scrollWidth <= 0 || this._layoutWidth <= 0) return;
+    const canScroll = this._scrollWidth > this._layoutWidth;
+    this.setState((s) => {
+      const showRight = canScroll;
+      const showLeft = canScroll && s.showLeftFade;
+      if (s.showRightFade !== showRight || (showLeft !== s.showLeftFade && canScroll)) {
+        return { showRightFade: showRight, showLeftFade: showLeft };
+      }
+      return null;
+    });
+  };
 
   static getDerivedStateFromProps(nextProps, prevState) {
     const { actions } = nextProps;
@@ -250,15 +330,6 @@ export default class Toolbar extends Component {
         editor.showAndroidKeyboard();
         editor.sendAction(action, 'result');
         break;
-      case actions.lineHeight:
-        editor.showAndroidKeyboard();
-        if (this.props[action]) {
-          this.props[action]();
-        } else {
-          editor.sendAction(action, 'result', 1.5);
-        }
-        break;
-      case actions.fontSize:
       case actions.fontName:
       case actions.foreColor:
       case actions.hiliteColor:
@@ -379,18 +450,39 @@ export default class Toolbar extends Component {
       return null;
     }
     const vStyle = [styles.barContainer, style, disabled && this._getButtonDisabledStyle()];
+    const barBg = (style && style.backgroundColor) || TOOLBAR_BG;
+    const showFades = horizontal;
     return (
       <View style={vStyle}>
-        <FlatList
-          horizontal={horizontal}
-          style={flatContainerStyle}
-          keyboardShouldPersistTaps={'always'}
-          keyExtractor={(item, index) => item.action + '-' + index}
-          data={this.state.data}
-          alwaysBounceHorizontal={false}
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => this._renderAction(item.action, item.selected)}
-        />
+        <View style={styles.scrollWrapper} onLayout={showFades ? this._onLayout : undefined}>
+          <FlatList
+            horizontal={horizontal}
+            style={[flatContainerStyle, showFades && styles.scrollList]}
+            keyboardShouldPersistTaps={'always'}
+            keyExtractor={(item, index) => item.action + '-' + index}
+            data={this.state.data}
+            alwaysBounceHorizontal={false}
+            showsHorizontalScrollIndicator={false}
+            onScroll={showFades ? this._onScroll : undefined}
+            onContentSizeChange={showFades ? this._onContentSizeChange : undefined}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => this._renderAction(item.action, item.selected)}
+          />
+          {showFades && (
+            <>
+              <FadeOverlay
+                side="left"
+                visible={this.state.showLeftFade}
+                backgroundColor={barBg}
+              />
+              <FadeOverlay
+                side="right"
+                visible={this.state.showRightFade}
+                backgroundColor={barBg}
+              />
+            </>
+          )}
+        </View>
         {children}
       </View>
     );
@@ -407,5 +499,37 @@ const styles = StyleSheet.create({
   item: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  scrollWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    position: 'relative',
+  },
+
+  scrollList: {
+    flex: 1,
+  },
+
+  fadeOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: FADE_WIDTH,
+  },
+
+  fadeLeft: {
+    left: 0,
+  },
+
+  fadeRight: {
+    right: 0,
+  },
+
+  fadeStrip: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
   },
 });
