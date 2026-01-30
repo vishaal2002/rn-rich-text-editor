@@ -755,5 +755,55 @@ function createHTML(options = {}) {
 `;
 }
 
+/**
+ * Creates minimal HTML for read-only display: content in a fixed-height scrollable box.
+ * No editor, no toolbar. Content is injected via script for safety.
+ * Caller must replace __READONLY_CONTENT_PLACEHOLDER__ with JSON.stringify(content).
+ */
+function createReadOnlyHTML(options = {}) {
+  const {
+    backgroundColor = '#FFF',
+    color = '#000033',
+    contentCSSText = '',
+    cssText = '',
+    initialCSSText = '',
+  } = options;
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="user-scalable=1.0,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
+    <style>
+        ${initialCSSText}
+        * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; height: 100%; }
+        body { background-color: ${backgroundColor}; color: ${color}; }
+        .readonly-container {
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 10px;
+            ${contentCSSText}
+        }
+    </style>
+    ${getContentCSS()}
+    <style>${cssText}</style>
+</head>
+<body>
+    <div id="readonly-content" class="readonly-container"></div>
+    <script>
+        (function() {
+            var content = __READONLY_CONTENT_PLACEHOLDER__;
+            var el = document.getElementById('readonly-content');
+            if (el && content != null) {
+                el.innerHTML = typeof content === 'string' ? content : '';
+            }
+        })();
+    </script>
+</body>
+</html>
+`;
+}
+
 const HTML = createHTML();
-export { HTML, createHTML };
+export { HTML, createHTML, createReadOnlyHTML };

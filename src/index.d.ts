@@ -39,6 +39,7 @@ export interface EditorProps {
   initialContentHTML?: string;
   initialFocus?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
   useContainer?: boolean;
   pasteAsPlainText?: boolean;
   autoCapitalize?: string;

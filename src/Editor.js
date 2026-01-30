@@ -3,7 +3,7 @@ import { WebView } from 'react-native-webview';
 import { actions } from './actions';
 import { messages } from './messages';
 import { Keyboard, Platform, StyleSheet, TextInput, View, Linking } from 'react-native';
-import { createHTML } from './editor/createHTML';
+import { createHTML, createReadOnlyHTML } from './editor/createHTML';
 
 const PlatformIOS = Platform.OS === 'ios';
 
@@ -18,6 +18,7 @@ export default class Editor extends Component {
     initialContentHTML: '',
     initialFocus: false,
     disabled: false,
+    readOnly: false,
     useContainer: true,
     pasteAsPlainText: false,
     autoCapitalize: 'off',
@@ -69,39 +70,48 @@ export default class Editor extends Component {
       initialHeight,
       initialFocus,
       disabled,
+      readOnly,
       styleWithCSS,
       useCharacter,
       defaultHttps,
+      initialContentHTML,
     } = props;
+    const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html && html.html)) || '';
     that.state = {
       html: {
-        html:
-          html ||
-          createHTML({
-            backgroundColor,
-            color,
-            caretColor,
-            placeholderColor,
-            initialCSSText,
-            cssText,
-            contentCSSText,
-            pasteAsPlainText,
-            pasteListener: !!onPaste,
-            keyUpListener: !!onKeyUp,
-            keyDownListener: !!onKeyDown,
-            inputListener: !!onInput,
-            enterKeyHint,
-            autoCapitalize,
-            autoCorrect,
-            initialFocus: initialFocus && !disabled,
-            defaultParagraphSeparator,
-            firstFocusEnd,
-            useContainer,
-            styleWithCSS,
-            useCharacter,
-            defaultHttps,
-            
-          }),
+        html: readOnly
+          ? createReadOnlyHTML({
+              backgroundColor,
+              color,
+              initialCSSText,
+              cssText,
+              contentCSSText,
+            }).replace('__READONLY_CONTENT_PLACEHOLDER__', JSON.stringify(contentForReadOnly))
+          : (html ||
+            createHTML({
+              backgroundColor,
+              color,
+              caretColor,
+              placeholderColor,
+              initialCSSText,
+              cssText,
+              contentCSSText,
+              pasteAsPlainText,
+              pasteListener: !!onPaste,
+              keyUpListener: !!onKeyUp,
+              keyDownListener: !!onKeyDown,
+              inputListener: !!onInput,
+              enterKeyHint,
+              autoCapitalize,
+              autoCorrect,
+              initialFocus: initialFocus && !disabled,
+              defaultParagraphSeparator,
+              firstFocusEnd,
+              useContainer,
+              styleWithCSS,
+              useCharacter,
+              defaultHttps,
+            })),
       },
       keyboardHeight: 0,
       height: initialHeight > 0 ? initialHeight : DEFAULT_EDITOR_HEIGHT,
@@ -240,7 +250,26 @@ export default class Editor extends Component {
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
-    const { editorStyle, disabled, placeholder } = this.props;
+    const { editorStyle, disabled, placeholder, readOnly, initialContentHTML, html } = this.props;
+    if (readOnly) {
+      const contentChanged = initialContentHTML !== prevProps.initialContentHTML || html !== prevProps.html;
+      if (prevProps.readOnly !== readOnly || contentChanged || prevProps.editorStyle !== editorStyle) {
+        const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html && html.html)) || '';
+        const { backgroundColor, color, initialCSSText, cssText, contentCSSText } = editorStyle || {};
+        this.setState({
+          html: {
+            html: createReadOnlyHTML({
+              backgroundColor,
+              color,
+              initialCSSText,
+              cssText,
+              contentCSSText,
+            }).replace('__READONLY_CONTENT_PLACEHOLDER__', JSON.stringify(contentForReadOnly)),
+          },
+        });
+      }
+      return;
+    }
     if (prevProps.editorStyle !== editorStyle) {
       editorStyle && this.setContentStyle(editorStyle);
     }
@@ -258,16 +287,16 @@ export default class Editor extends Component {
 
   renderWebView() {
     let that = this;
-    const { html, editorStyle, useContainer, style, onLink, dataDetectorTypes, ...rest } = that.props;
+    const { html, editorStyle, useContainer, style, onLink, dataDetectorTypes, readOnly, ...rest } = that.props;
     const { html: viewHTML } = that.state;
     return (
       <>
         <WebView
           useWebKit={true}
           scrollEnabled={false}
-          hideKeyboardAccessoryView={true}
+          hideKeyboardAccessoryView={!readOnly}
           keyboardDisplayRequiresUserAction={false}
-          nestedScrollEnabled={!useContainer}
+          nestedScrollEnabled={readOnly || !useContainer}
           style={[styles.webview, style]}
           {...rest}
           ref={that.setRef}
@@ -288,7 +317,7 @@ export default class Editor extends Component {
             return true;
           }}
         />
-        {Platform.OS === 'android' && <TextInput ref={ref => (that._input = ref)} style={styles._input} />}
+        {!readOnly && Platform.OS === 'android' && <TextInput ref={ref => (that._input = ref)} style={styles._input} />}
       </>
     );
   }
@@ -452,7 +481,11 @@ export default class Editor extends Component {
 
   init() {
     let that = this;
-    const { initialFocus, initialContentHTML, placeholder, editorInitializedCallback, disabled } = that.props;
+    const { initialFocus, initialContentHTML, placeholder, editorInitializedCallback, disabled, readOnly } = that.props;
+    if (readOnly) {
+      editorInitializedCallback();
+      return;
+    }
     initialContentHTML && that.setContentHTML(initialContentHTML);
     placeholder && that.setPlaceholder(placeholder);
     that.setDisable(disabled);
