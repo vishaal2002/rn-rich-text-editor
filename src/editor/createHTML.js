@@ -772,7 +772,7 @@ function escapeForScript(s) {
 }
 
 /**
- * Creates minimal HTML for read-only display: content in a fixed-height scrollable box.
+ * Creates minimal HTML for read-only display: content expands to full height, no scroll.
  * No editor, no toolbar. Content is escaped and embedded in the template.
  */
 function createReadOnlyHTML(options = {}) {
@@ -793,12 +793,9 @@ function createReadOnlyHTML(options = {}) {
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; height: 100%; }
+        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; }
         body { background-color: ${backgroundColor}; color: ${color}; }
         .readonly-container {
-            height: 100%;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
             padding: 0;
             ${contentCSSText}
         }
@@ -814,9 +811,16 @@ function createReadOnlyHTML(options = {}) {
             var el = document.getElementById('readonly-content');
             if (el) {
                 el.innerHTML = content;
+                var sendHeight = function() {
+                    var h = document.body.scrollHeight;
+                    if (window.ReactNativeWebView) {
+                        window.ReactNativeWebView.postMessage(JSON.stringify({type: 'OFFSET_HEIGHT', data: h}));
+                    }
+                };
+                setTimeout(sendHeight, 0);
             }
         })();
-    </script>
+    <\/script>
 </body>
 </html>
 `;

@@ -115,7 +115,7 @@ export default class Editor extends Component {
             })),
       },
       keyboardHeight: 0,
-      height: initialHeight > 0 ? initialHeight : DEFAULT_EDITOR_HEIGHT,
+      height: readOnly ? 1 : (initialHeight > 0 ? initialHeight : DEFAULT_EDITOR_HEIGHT),
     };
     that.focusListeners = [];
   }
@@ -215,6 +215,9 @@ export default class Editor extends Component {
           onInput?.(data);
           break;
         case messages.OFFSET_HEIGHT:
+          if (that.props.readOnly) {
+            that.setState({ height: Number(data) || 1 });
+          }
           that.setWebHeight(data);
           break;
         case messages.OFFSET_Y:

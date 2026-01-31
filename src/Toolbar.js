@@ -465,7 +465,7 @@ export default class Toolbar extends Component {
     const disabledStyle = disabled ? { backgroundColor: '#C9CED7' } : {};
     const vStyle = [styles.barContainer, disabledStyle, style, disabled && this._getButtonDisabledStyle()];
     const barBg = (style && style.backgroundColor) || (disabled && '#C9CED7') || TOOLBAR_BG;
-    const showFades = horizontal;
+    const showFades = horizontal && !disabled;
     return (
       <View style={vStyle}>
         <View style={styles.scrollWrapper} onLayout={showFades ? this._onLayout : undefined}>
