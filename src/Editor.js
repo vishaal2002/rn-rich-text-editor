@@ -277,6 +277,9 @@ export default class Editor extends Component {
     }
     if (disabled !== prevProps.disabled) {
       this.setDisable(disabled);
+      const { editorStyle } = this.props;
+      const baseBg = editorStyle?.backgroundColor ?? '#FFF';
+      this.setContentStyle(disabled ? { backgroundColor: '#C9CED7' } : { backgroundColor: baseBg });
     }
     if (placeholder !== prevProps.placeholder) {
       this.setPlaceholder(placeholder);
@@ -338,13 +341,18 @@ export default class Editor extends Component {
     const { useContainer, style, errorMessage, readOnly, disabled } = this.props;
     const errorStyle = !readOnly && errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
     const disabledStyle = disabled ? { backgroundColor: '#C9CED7' } : {};
+    const readOnlyStyle = readOnly ? { borderWidth: 0 } : {};
+    // overflow: 'hidden' prevents the WebView from visually cutting off the container border at corners
+    // disabledStyle last so it overrides user's backgroundColor when disabled
+    const containerStyle = [style, errorStyle, readOnlyStyle, { overflow: 'hidden' }, disabledStyle];
+    if (useContainer) containerStyle.push({ height });
     
     return useContainer ? (
-      <View style={[disabledStyle, style, { height }, errorStyle]} onLayout={this.onViewLayout}>
+      <View style={containerStyle} onLayout={this.onViewLayout}>
         {this.renderWebView()}
       </View>
     ) : (
-      <View style={[disabledStyle, style, errorStyle]}>
+      <View style={containerStyle}>
         {this.renderWebView()}
       </View>
     );
@@ -492,6 +500,9 @@ export default class Editor extends Component {
     initialContentHTML && that.setContentHTML(initialContentHTML);
     placeholder && that.setPlaceholder(placeholder);
     that.setDisable(disabled);
+    if (disabled) {
+      that.setContentStyle({ backgroundColor: '#C9CED7' });
+    }
     editorInitializedCallback();
 
     // initial request focus
