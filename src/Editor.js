@@ -335,15 +335,16 @@ export default class Editor extends Component {
     // useContainer is an optional prop with default value of true
     // If set to true, it will use a View wrapper with styles and height.
     // If set to false, it will not use a View wrapper
-    const { useContainer, style, errorMessage } = this.props;
-    const errorStyle = errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
+    const { useContainer, style, errorMessage, readOnly, disabled } = this.props;
+    const errorStyle = !readOnly && errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
+    const disabledStyle = disabled ? { backgroundColor: '#C9CED7' } : {};
     
     return useContainer ? (
-      <View style={[editorBorderStyle, style, { height }, errorStyle]} onLayout={this.onViewLayout}>
+      <View style={[disabledStyle, style, { height }, errorStyle]} onLayout={this.onViewLayout}>
         {this.renderWebView()}
       </View>
     ) : (
-      <View style={[editorBorderStyle, errorStyle]}>
+      <View style={[disabledStyle, style, errorStyle]}>
         {this.renderWebView()}
       </View>
     );
@@ -517,19 +518,6 @@ export default class Editor extends Component {
     });
   }
 }
-
-const BORDER_COLOR = '#C9CED7';
-const BORDER_RADIUS = 6;
-
-const editorBorderStyle = {
-  borderColor: BORDER_COLOR,
-  borderTopWidth: 1,
-  borderLeftWidth: 1,
-  borderRightWidth: 1,
-  borderBottomWidth: 1,
-  borderTopLeftRadius: BORDER_RADIUS,
-  borderTopRightRadius: BORDER_RADIUS,
-};
 
 const styles = StyleSheet.create({
   _input: {

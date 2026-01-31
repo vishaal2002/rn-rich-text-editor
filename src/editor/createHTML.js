@@ -799,7 +799,7 @@ function createReadOnlyHTML(options = {}) {
             height: 100%;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding: 10px;
+            padding: 0;
             ${contentCSSText}
         }
     </style>

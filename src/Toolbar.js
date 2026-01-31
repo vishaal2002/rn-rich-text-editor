@@ -97,7 +97,6 @@ function getDefaultIcon() {
   return texts;
 }
 
-// noinspection FallThroughInSwitchStatementJS
 export default class Toolbar extends Component {
   static defaultProps = {
     actions: defaultActions,
@@ -463,8 +462,9 @@ export default class Toolbar extends Component {
     if (readOnly) {
       return null;
     }
-    const vStyle = [styles.barContainer, style, disabled && this._getButtonDisabledStyle()];
-    const barBg = (style && style.backgroundColor) || TOOLBAR_BG;
+    const disabledStyle = disabled ? { backgroundColor: '#C9CED7' } : {};
+    const vStyle = [styles.barContainer, disabledStyle, style, disabled && this._getButtonDisabledStyle()];
+    const barBg = (style && style.backgroundColor) || (disabled && '#C9CED7') || TOOLBAR_BG;
     const showFades = horizontal;
     return (
       <View style={vStyle}>
@@ -503,21 +503,11 @@ export default class Toolbar extends Component {
   }
 }
 
-const BORDER_COLOR = '#C9CED7';
-const BORDER_RADIUS = 6;
-
 const styles = StyleSheet.create({
   barContainer: {
     height: 44,
     backgroundColor: '#efefef',
     alignItems: 'center',
-    borderColor: BORDER_COLOR,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderBottomLeftRadius: BORDER_RADIUS,
-    borderBottomRightRadius: BORDER_RADIUS,
   },
 
   item: {
