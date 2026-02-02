@@ -6,19 +6,13 @@ const FADE_WIDTH = 24;
 const FADE_STRIPS = 5;
 const TOOLBAR_BG = '#efefef';
 
-function hexToRgb(hex) {
-  const match = hex.replace('#', '').match(/.{2}/g);
-  return match ? match.map((x) => parseInt(x, 16)) : [239, 239, 239];
-}
+const FADE_OPACITY_MIN = 0.4;  // 40% - #FFFFFF66
+const FADE_OPACITY_MAX = 0.76; // 76%
 
-function FadeOverlay({ side, visible, backgroundColor }) {
+function FadeOverlay({ side, visible }) {
   if (!visible) return null;
-  const bg = backgroundColor || TOOLBAR_BG;
-  const rgb = bg.startsWith('rgb')
-    ? bg.match(/\d+/g)?.map(Number) || [239, 239, 239]
-    : hexToRgb(bg);
   const strips = Array.from({ length: FADE_STRIPS }, (_, i) => {
-    const alpha = ((i + 1) / FADE_STRIPS) * 0.85;
+    const alpha = FADE_OPACITY_MIN + (i / (FADE_STRIPS - 1)) * (FADE_OPACITY_MAX - FADE_OPACITY_MIN);
     const stripWidth = FADE_WIDTH / FADE_STRIPS;
     return (
       <View
@@ -27,7 +21,7 @@ function FadeOverlay({ side, visible, backgroundColor }) {
           styles.fadeStrip,
           {
             width: stripWidth,
-            backgroundColor: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`,
+            backgroundColor: `rgba(255, 255, 255, ${alpha})`,
             left: side === 'left' ? FADE_WIDTH - (i + 1) * stripWidth : i * stripWidth,
           },
         ]}
@@ -104,7 +98,7 @@ export default class Toolbar extends Component {
     readOnly: false,
     iconTint: '#71787F',
     iconSize: 20,
-    iconGap: 16,
+    iconGap: 12,
     separatorStyle: undefined,
   };
 
@@ -372,6 +366,35 @@ export default class Toolbar extends Component {
       : selected
         ? that.props.selectedIconTint
         : that.props.iconTint;
+
+    let iconContent = null;
+    if (icon) {
+      if (typeof icon === 'function') {
+        iconContent = icon({
+          selected,
+          disabled,
+          tintColor,
+          iconSize,
+          iconGap,
+          width: iconSize,
+          height: iconSize,
+          color: tintColor,
+          fill: tintColor,
+        });
+      } else {
+        iconContent = (
+          <Image
+            source={icon}
+            style={{
+              tintColor,
+              height: iconSize,
+              width: iconSize,
+            }}
+          />
+        );
+      }
+    }
+
     return (
       <TouchableOpacity
         key={action}
@@ -380,30 +403,7 @@ export default class Toolbar extends Component {
         testID={'button_action'}
         accessible={true}
         onPress={() => that._onPress(action)}>
-        {icon ? (
-          typeof icon === 'function' ? (
-            icon({
-              selected,
-              disabled,
-              tintColor,
-              iconSize,
-              iconGap,
-              width: iconSize,
-              height: iconSize,
-              color: tintColor,
-              fill: tintColor,
-            })
-          ) : (
-            <Image
-              source={icon}
-              style={{
-                tintColor,
-                height: iconSize,
-                width: iconSize,
-              }}
-            />
-          )
-        ) : null}
+        {iconContent}
       </TouchableOpacity>
     );
   }
@@ -423,6 +423,34 @@ export default class Toolbar extends Component {
     const currentAlignAction = selectedAlign || actions.alignLeft;
     const icon = that._getButtonIcon(currentAlignAction);
 
+    let iconContent = null;
+    if (icon) {
+      if (typeof icon === 'function') {
+        iconContent = icon({
+          selected,
+          disabled,
+          tintColor: tintColor,
+          iconSize,
+          iconGap,
+          width: iconSize,
+          height: iconSize,
+          color: tintColor,
+          fill: tintColor,
+        });
+      } else {
+        iconContent = (
+          <Image
+            source={icon}
+            style={{
+              tintColor,
+              height: iconSize,
+              width: iconSize,
+            }}
+          />
+        );
+      }
+    }
+
     return (
       <TouchableOpacity
         key={action}
@@ -431,36 +459,13 @@ export default class Toolbar extends Component {
         testID={'button_align'}
         accessible={true}
         onPress={() => that._onPress(action)}>
-        {icon ? (
-          typeof icon === 'function' ? (
-            icon({
-              selected,
-              disabled,
-              tintColor: tintColor,
-              iconSize,
-              iconGap,
-              width: iconSize,
-              height: iconSize,
-              color: tintColor,
-              fill: tintColor,
-            })
-          ) : (
-            <Image
-              source={icon}
-              style={{
-                tintColor,
-                height: iconSize,
-                width: iconSize,
-              }}
-            />
-          )
-        ) : null}
+        {iconContent}
       </TouchableOpacity>
     );
   }
 
   _renderSeparator() {
-    const { style, separatorStyle, iconGap = 16 } = this.props;
+    const { style, separatorStyle, iconGap = 12 } = this.props;
     // Extract separator from style prop (handles both object and array)
     let separatorFromStyleProp = null;
     if (style) {
@@ -533,22 +538,6 @@ export default class Toolbar extends Component {
       }
     }
     const vStyle = [styles.barContainer, disabledStyle, containerStyle, disabled && this._getButtonDisabledStyle()];
-    // Extract backgroundColor from containerStyle (handle array case)
-    let barBg = TOOLBAR_BG;
-    if (disabled) {
-      barBg = '#C9CED7';
-    } else if (containerStyle) {
-      if (Array.isArray(containerStyle)) {
-        for (const styleItem of containerStyle) {
-          if (styleItem && typeof styleItem === 'object' && styleItem.backgroundColor) {
-            barBg = styleItem.backgroundColor;
-            break;
-          }
-        }
-      } else if (typeof containerStyle === 'object' && containerStyle.backgroundColor) {
-        barBg = containerStyle.backgroundColor;
-      }
-    }
     const showFades = horizontal && !disabled;
     return (
       <View style={vStyle}>
@@ -571,12 +560,10 @@ export default class Toolbar extends Component {
               <FadeOverlay
                 side="left"
                 visible={this.state.showLeftFade}
-                backgroundColor={barBg}
               />
               <FadeOverlay
                 side="right"
                 visible={this.state.showRightFade}
-                backgroundColor={barBg}
               />
             </>
           )}
