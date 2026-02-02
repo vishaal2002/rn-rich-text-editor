@@ -795,12 +795,15 @@ function createReadOnlyHTML(options = {}) {
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; overflow: hidden; }
-        body { background-color: ${backgroundColor}; color: ${color}; min-height: 0; }
+        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; overflow: hidden; height: auto !important; min-height: 0 !important; }
+        body { background-color: ${backgroundColor}; color: ${color}; }
         .readonly-container {
             ${useDefaultFont ? 'font-family: Arial, Helvetica, sans-serif; font-size: 1em;' : ''}
             color: ${color};
             padding: 0;
+            height: auto !important;
+            min-height: 0 !important;
+            width: 100%;
             ${contentCSSText}
         }
     </style>
@@ -815,14 +818,22 @@ function createReadOnlyHTML(options = {}) {
             var el = document.getElementById('readonly-content');
             if (el) {
                 el.innerHTML = content;
+                var lastH = 0;
                 var sendHeight = function() {
-                    var h = el.scrollHeight;
-                    if (window.ReactNativeWebView) {
+                    var h = Math.ceil(el.scrollHeight);
+                    if (h !== lastH && window.ReactNativeWebView) {
+                        lastH = h;
                         window.ReactNativeWebView.postMessage(JSON.stringify({type: 'OFFSET_HEIGHT', data: h}));
                     }
                 };
                 setTimeout(sendHeight, 0);
                 requestAnimationFrame(function() { requestAnimationFrame(sendHeight); });
+                setTimeout(sendHeight, 100);
+                if (typeof ResizeObserver !== 'undefined') {
+                    try {
+                        new ResizeObserver(sendHeight).observe(el);
+                    } catch (e) {}
+                }
             }
         })();
     <\/script>

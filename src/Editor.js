@@ -296,7 +296,12 @@ export default class Editor extends Component {
   renderWebView() {
     let that = this;
     const { html, editorStyle, useContainer, style, onLink, dataDetectorTypes, readOnly, ...rest } = that.props;
-    const { html: viewHTML } = that.state;
+    const { html: viewHTML, height: stateHeight } = that.state;
+    const webViewStyle = [
+      styles.webview,
+      style,
+      readOnly && stateHeight > 0 ? { height: stateHeight, flex: 0 } : undefined,
+    ].filter(Boolean);
     return (
       <>
         <WebView
@@ -305,7 +310,7 @@ export default class Editor extends Component {
           hideKeyboardAccessoryView={!readOnly}
           keyboardDisplayRequiresUserAction={false}
           nestedScrollEnabled={readOnly || !useContainer}
-          style={[styles.webview, style]}
+          style={webViewStyle}
           {...rest}
           ref={that.setRef}
           onMessage={that.onMessage}
