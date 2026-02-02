@@ -785,6 +785,8 @@ function createReadOnlyHTML(options = {}) {
     initialCSSText = '',
   } = options;
   const escapedContent = escapeForScript(content);
+  const useDefaultFont =
+    !/font-family\s*:/i.test(contentCSSText) && !/font-size\s*:/i.test(contentCSSText);
   return `
 <!DOCTYPE html>
 <html>
@@ -793,9 +795,11 @@ function createReadOnlyHTML(options = {}) {
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; }
-        body { background-color: ${backgroundColor}; color: ${color}; }
+        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; overflow: hidden; }
+        body { background-color: ${backgroundColor}; color: ${color}; min-height: 0; }
         .readonly-container {
+            ${useDefaultFont ? 'font-family: Arial, Helvetica, sans-serif; font-size: 1em;' : ''}
+            color: ${color};
             padding: 0;
             ${contentCSSText}
         }
@@ -812,12 +816,13 @@ function createReadOnlyHTML(options = {}) {
             if (el) {
                 el.innerHTML = content;
                 var sendHeight = function() {
-                    var h = document.body.scrollHeight;
+                    var h = el.scrollHeight;
                     if (window.ReactNativeWebView) {
                         window.ReactNativeWebView.postMessage(JSON.stringify({type: 'OFFSET_HEIGHT', data: h}));
                     }
                 };
                 setTimeout(sendHeight, 0);
+                requestAnimationFrame(function() { requestAnimationFrame(sendHeight); });
             }
         })();
     <\/script>
