@@ -675,15 +675,25 @@ function createHTML(options = {}) {
             addEventListener(content, 'blur', handleBlur);
             addEventListener(content, 'focus', handleFocus);
             addEventListener(content, 'paste', function (e) {
-                // get text representation of clipboard
-                var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                var clipboardData = (e.originalEvent || e).clipboardData;
+                var text = clipboardData.getData('text/plain');
+                var html = clipboardData.getData('text/html');
 
-                ${pasteListener} && postAction({type: 'CONTENT_PASTED', data: text});
+                ${pasteListener} && postAction({type: 'CONTENT_PASTED', data: text || html});
                 if (${pasteAsPlainText}) {
-                    // cancel paste
                     e.preventDefault();
-                    // insert text manually
                     exec("insertText", text);
+                } else if (html && html.trim() !== '') {
+                    e.preventDefault();
+                    exec("insertHTML", html);
+                } else if (text && (text.indexOf('&lt;') !== -1 || text.indexOf('<') !== -1)) {
+                    var htmlFromText = text.indexOf('&lt;') !== -1
+                        ? text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+                        : text;
+                    if (htmlFromText.indexOf('<') !== -1) {
+                        e.preventDefault();
+                        exec("insertHTML", htmlFromText);
+                    }
                 }
             });
             addEventListener(content, 'compositionstart', function(event){
