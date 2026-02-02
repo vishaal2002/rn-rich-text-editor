@@ -1,6 +1,10 @@
 # React Native Rich Text Editor
 
-A production-ready rich text editor for React Native, built with WebView. Create beautiful editing experiences with smart paste, full formatting control, and seamless cross-platform support.
+[![npm version](https://img.shields.io/npm/v/rn-rich-text-editor.svg)](https://www.npmjs.com/package/rn-rich-text-editor)
+[![npm downloads](https://img.shields.io/npm/dm/rn-rich-text-editor.svg)](https://www.npmjs.com/package/rn-rich-text-editor)
+[![license](https://img.shields.io/npm/l/rn-rich-text-editor.svg)](https://www.npmjs.com/package/rn-rich-text-editor)
+
+**A WebView-based rich text editor for React Native—formatting, smart paste, and full control in one component.**
 
 ## ✨ Features
 
