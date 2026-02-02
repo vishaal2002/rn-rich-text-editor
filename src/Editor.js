@@ -309,7 +309,7 @@ export default class Editor extends Component {
           scrollEnabled={false}
           hideKeyboardAccessoryView={!readOnly}
           keyboardDisplayRequiresUserAction={false}
-          nestedScrollEnabled={readOnly || !useContainer}
+          nestedScrollEnabled={readOnly ? false : !useContainer}
           style={webViewStyle}
           {...rest}
           ref={that.setRef}
@@ -353,7 +353,13 @@ export default class Editor extends Component {
     // overflow: 'hidden' prevents the WebView from visually cutting off the container border at corners
     // disabledStyle last so it overrides user's backgroundColor when disabled
     const containerStyle = [style, errorStyle, readOnlyStyle, { overflow: 'hidden' }, disabledStyle];
-    if (useContainer) containerStyle.push({ height });
+    if (useContainer) {
+      containerStyle.push({ height });
+      // For readonly, ensure container expands fully to show all content without scrolling
+      if (readOnly && height > 0) {
+        containerStyle.push({ minHeight: height, maxHeight: height });
+      }
+    }
     
     return useContainer ? (
       <View style={containerStyle} onLayout={this.onViewLayout}>
