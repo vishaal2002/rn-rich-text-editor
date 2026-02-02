@@ -105,6 +105,7 @@ export default class Toolbar extends Component {
     iconTint: '#71787F',
     iconSize: 20,
     iconGap: 16,
+    separatorStyle: undefined,
   };
 
   constructor(props) {
@@ -460,23 +461,38 @@ export default class Toolbar extends Component {
 
   _renderSeparator() {
     const { style, separatorStyle, iconGap = 16 } = this.props;
-    const separatorStylesFromStyle = style && typeof style === 'object' && !Array.isArray(style) && style.separator
-      ? style.separator
-      : null;
+    // Extract separator from style prop (handles both object and array)
+    let separatorFromStyleProp = null;
+    if (style) {
+      if (Array.isArray(style)) {
+        for (const styleItem of style) {
+          if (styleItem && typeof styleItem === 'object' && styleItem.separator) {
+            separatorFromStyleProp = styleItem.separator;
+            break;
+          }
+        }
+      } else if (typeof style === 'object' && style.separator) {
+        separatorFromStyleProp = style.separator;
+      }
+    }
+    // Merge: defaults, then style.separator, then separatorStyle (later overrides)
+    const merged = {
+      width: 1,
+      height: 24,
+      backgroundColor: '#E2E2E4',
+      marginHorizontal: iconGap / 2,
+    };
+    if (separatorFromStyleProp) {
+      Object.assign(merged, StyleSheet.flatten(separatorFromStyleProp));
+    }
+    if (separatorStyle) {
+      Object.assign(merged, StyleSheet.flatten(separatorStyle));
+    }
     return (
       <View
         key="separator"
         pointerEvents="none"
-        style={[
-          {
-            width: 1,
-            height: 24,
-            backgroundColor: '#E2E2E4', // Fallback color
-            marginHorizontal: iconGap / 2,
-          },
-          separatorStylesFromStyle, // From style.separator
-          separatorStyle, // From separatorStyle prop (for backward compatibility)
-        ]}
+        style={merged}
       />
     );
   }
@@ -499,14 +515,40 @@ export default class Toolbar extends Component {
       return null;
     }
     const disabledStyle = disabled ? { backgroundColor: '#C9CED7' } : {};
-    // Extract separator styles from style prop if present, keep rest for container
+    // Extract separator from style prop if present, keep rest for container
     let containerStyle = style;
-    if (style && typeof style === 'object' && !Array.isArray(style) && style.separator) {
-      const { separator, ...rest } = style;
-      containerStyle = rest;
+    if (style) {
+      if (Array.isArray(style)) {
+        // Remove separator from any object in the array
+        containerStyle = style.map(styleItem => {
+          if (styleItem && typeof styleItem === 'object' && styleItem.separator) {
+            const { separator, ...rest } = styleItem;
+            return rest;
+          }
+          return styleItem;
+        });
+      } else if (typeof style === 'object' && style.separator) {
+        const { separator, ...rest } = style;
+        containerStyle = rest;
+      }
     }
     const vStyle = [styles.barContainer, disabledStyle, containerStyle, disabled && this._getButtonDisabledStyle()];
-    const barBg = (containerStyle && typeof containerStyle === 'object' && !Array.isArray(containerStyle) && containerStyle.backgroundColor) || (disabled && '#C9CED7') || TOOLBAR_BG;
+    // Extract backgroundColor from containerStyle (handle array case)
+    let barBg = TOOLBAR_BG;
+    if (disabled) {
+      barBg = '#C9CED7';
+    } else if (containerStyle) {
+      if (Array.isArray(containerStyle)) {
+        for (const styleItem of containerStyle) {
+          if (styleItem && typeof styleItem === 'object' && styleItem.backgroundColor) {
+            barBg = styleItem.backgroundColor;
+            break;
+          }
+        }
+      } else if (typeof containerStyle === 'object' && containerStyle.backgroundColor) {
+        barBg = containerStyle.backgroundColor;
+      }
+    }
     const showFades = horizontal && !disabled;
     return (
       <View style={vStyle}>
