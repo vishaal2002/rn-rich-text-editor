@@ -801,10 +801,21 @@ function createReadOnlyHTML(options = {}) {
             ${useDefaultFont ? 'font-family: Arial, Helvetica, sans-serif; font-size: 1em;' : ''}
             color: ${color};
             padding: 0;
+            margin: 0;
             height: auto !important;
             min-height: 0 !important;
             width: 100%;
             ${contentCSSText}
+        }
+        .readonly-container > *:first-child {
+            margin-top: 0 !important;
+        }
+        .readonly-container p {
+            margin-top: 0;
+            margin-bottom: 0.5em;
+        }
+        .readonly-container p:last-child {
+            margin-bottom: 0;
         }
     </style>
     ${getContentCSS()}
@@ -822,7 +833,7 @@ function createReadOnlyHTML(options = {}) {
                 var sendHeight = function() {
                     var scrollH = el.scrollHeight;
                     var offsetH = el.offsetHeight;
-                    var h = Math.ceil(Math.max(scrollH, offsetH)) + 8;
+                    var h = Math.ceil(Math.max(scrollH, offsetH)) + 16;
                     if (h !== lastH && window.ReactNativeWebView) {
                         lastH = h;
                         window.ReactNativeWebView.postMessage(JSON.stringify({type: 'OFFSET_HEIGHT', data: h}));
