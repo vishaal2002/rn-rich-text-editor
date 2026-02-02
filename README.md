@@ -4,7 +4,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/rn-rich-text-editor.svg)](https://www.npmjs.com/package/rn-rich-text-editor)
 [![license](https://img.shields.io/npm/l/rn-rich-text-editor.svg)](https://www.npmjs.com/package/rn-rich-text-editor)
 
-**A WebView-based rich text editor for React Native—formatting, smart paste, and full control in one component.**
+**A powerful and customizable rich text editor built natively for React Native. Everything included, nothing missing.**
 
 ## ✨ Features
 
