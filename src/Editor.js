@@ -295,12 +295,13 @@ export default class Editor extends Component {
 
   renderWebView() {
     let that = this;
-    const { html, editorStyle, useContainer, style, onLink, dataDetectorTypes, readOnly, ...rest } = that.props;
+    const { html, editorStyle, useContainer, style, onLink, dataDetectorTypes, readOnly, disabled, ...rest } = that.props;
     const { html: viewHTML, height: stateHeight } = that.state;
+    // Don't apply style prop to WebView to avoid double borders - style is only for container
     const webViewStyle = [
       styles.webview,
-      style,
       readOnly && stateHeight > 0 ? { height: stateHeight, flex: 0 } : undefined,
+      disabled ? { pointerEvents: 'none' } : undefined,
     ].filter(Boolean);
     return (
       <>
@@ -315,7 +316,7 @@ export default class Editor extends Component {
           ref={that.setRef}
           onMessage={that.onMessage}
           originWhitelist={['*']}
-          dataDetectorTypes={dataDetectorTypes}
+          dataDetectorTypes={disabled ? 'none' : dataDetectorTypes}
           domStorageEnabled={false}
           bounces={false}
           javaScriptEnabled={true}
@@ -348,11 +349,30 @@ export default class Editor extends Component {
     // If set to false, it will not use a View wrapper
     const { useContainer, style, errorMessage, readOnly, disabled } = this.props;
     const errorStyle = !readOnly && errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
-    const disabledStyle = disabled ? { backgroundColor: '#C9CED7' } : {};
-    const readOnlyStyle = readOnly ? { borderWidth: 0 } : {};
+    const disabledStyle = disabled ? { backgroundColor: '#C9CED7', pointerEvents: 'none' } : {};
+    
+    // For readonly, remove border from style prop to ensure no border appears
+    let containerStyleProp = style;
+    if (readOnly && style) {
+      if (Array.isArray(style)) {
+        containerStyleProp = style.map(styleItem => {
+          if (styleItem && typeof styleItem === 'object') {
+            const { borderWidth, borderColor, borderTopWidth, borderBottomWidth, borderLeftWidth, borderRightWidth, ...rest } = styleItem;
+            return rest;
+          }
+          return styleItem;
+        });
+      } else if (typeof style === 'object') {
+        const { borderWidth, borderColor, borderTopWidth, borderBottomWidth, borderLeftWidth, borderRightWidth, ...rest } = style;
+        containerStyleProp = rest;
+      }
+    }
+    
+    const readOnlyStyle = readOnly ? { borderWidth: 0, borderColor: 'transparent' } : {};
     // overflow: 'hidden' prevents the WebView from visually cutting off the container border at corners
     // disabledStyle last so it overrides user's backgroundColor when disabled
-    const containerStyle = [style, errorStyle, readOnlyStyle, { overflow: 'hidden' }, disabledStyle];
+    // readOnlyStyle after containerStyleProp to ensure border is removed
+    const containerStyle = [containerStyleProp, errorStyle, { overflow: 'hidden' }, readOnlyStyle, disabledStyle];
     if (useContainer) {
       containerStyle.push({ height });
       // For readonly, ensure container expands fully to show all content without scrolling
