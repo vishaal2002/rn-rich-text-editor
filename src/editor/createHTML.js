@@ -820,7 +820,9 @@ function createReadOnlyHTML(options = {}) {
                 el.innerHTML = content;
                 var lastH = 0;
                 var sendHeight = function() {
-                    var h = Math.ceil(el.scrollHeight);
+                    var scrollH = el.scrollHeight;
+                    var offsetH = el.offsetHeight;
+                    var h = Math.ceil(Math.max(scrollH, offsetH)) + 8;
                     if (h !== lastH && window.ReactNativeWebView) {
                         lastH = h;
                         window.ReactNativeWebView.postMessage(JSON.stringify({type: 'OFFSET_HEIGHT', data: h}));
