@@ -81,6 +81,7 @@ export interface ToolbarProps {
   selectedButtonStyle?: object;
   unselectedButtonStyle?: object;
   disabledButtonStyle?: object;
+  separatorStyle?: object;
   iconMap?: Record<string, unknown>;
   renderAction?: (action: string, selected: boolean) => React.ReactElement;
   onPressAddImage?: () => void;
@@ -139,6 +140,7 @@ export const actions: {
   hiliteColor: string;
   blockquote: string;
   keyboard: string;
+  separator: string;
   [key: string]: string;
 };
 

@@ -44,6 +44,7 @@ export const actions = {
   hiliteColor: 'hiliteColor',
   blockquote: 'quote',
   keyboard: 'keyboard',
+  separator: 'separator', // Visual separator for toolbar
   setTitlePlaceholder: 'SET_TITLE_PLACEHOLDER',
   setContentPlaceholder: 'SET_CONTENT_PLACEHOLDER',
   setTitleFocusHandler: 'SET_TITLE_FOCUS_HANDLER',

@@ -169,19 +169,21 @@ export default class Toolbar extends Component {
   };
 
   static getDerivedStateFromProps(nextProps, prevState) {
-    const { actions } = nextProps;
-    if (actions !== prevState.actions) {
+    const { actions: actionsList } = nextProps;
+    if (actionsList !== prevState.actions) {
       const items = prevState.items || [];
       const isItemSelected = (action) =>
         items.includes(action) || items.some(item => item && item.type === action);
       return {
-        actions,
-        data: actions.map(action => ({
+        actions: actionsList,
+        data: actionsList.map(action => ({
           action,
           selected:
-            action === actions.align
-              ? ALIGN_ACTIONS.some(a => isItemSelected(a))
-              : isItemSelected(action),
+            action === actions.separator
+              ? false // Separators are never selected
+              : action === actions.align
+                ? ALIGN_ACTIONS.some(a => isItemSelected(a))
+                : isItemSelected(action),
         })),
       };
     }
@@ -224,6 +226,9 @@ export default class Toolbar extends Component {
         items,
         selectedAlign,
         data: this.state.actions.map(action => {
+          if (action === actions.separator) {
+            return { action, selected: false };
+          }
           const isAlignAction = action === actions.align;
           const selected = isAlignAction
             ? !!selectedAlign
@@ -274,6 +279,11 @@ export default class Toolbar extends Component {
 
     if (!editor) {
       this._mount();
+      return;
+    }
+
+    // Separators are not clickable
+    if (action === actions.separator) {
       return;
     }
 
@@ -448,7 +458,33 @@ export default class Toolbar extends Component {
     );
   }
 
+  _renderSeparator() {
+    const { style, separatorStyle, iconGap = 16 } = this.props;
+    const separatorStylesFromStyle = style && typeof style === 'object' && !Array.isArray(style) && style.separator
+      ? style.separator
+      : null;
+    return (
+      <View
+        key="separator"
+        pointerEvents="none"
+        style={[
+          {
+            width: 1,
+            height: 24,
+            backgroundColor: '#E2E2E4', // Fallback color
+            marginHorizontal: iconGap / 2,
+          },
+          separatorStylesFromStyle, // From style.separator
+          separatorStyle, // From separatorStyle prop (for backward compatibility)
+        ]}
+      />
+    );
+  }
+
   _renderAction(action, selected) {
+    if (action === actions.separator) {
+      return this._renderSeparator();
+    }
     if (action === actions.align) {
       return this._renderAlignButton(action, selected);
     }
@@ -463,8 +499,14 @@ export default class Toolbar extends Component {
       return null;
     }
     const disabledStyle = disabled ? { backgroundColor: '#C9CED7' } : {};
-    const vStyle = [styles.barContainer, disabledStyle, style, disabled && this._getButtonDisabledStyle()];
-    const barBg = (style && style.backgroundColor) || (disabled && '#C9CED7') || TOOLBAR_BG;
+    // Extract separator styles from style prop if present, keep rest for container
+    let containerStyle = style;
+    if (style && typeof style === 'object' && !Array.isArray(style) && style.separator) {
+      const { separator, ...rest } = style;
+      containerStyle = rest;
+    }
+    const vStyle = [styles.barContainer, disabledStyle, containerStyle, disabled && this._getButtonDisabledStyle()];
+    const barBg = (containerStyle && typeof containerStyle === 'object' && !Array.isArray(containerStyle) && containerStyle.backgroundColor) || (disabled && '#C9CED7') || TOOLBAR_BG;
     const showFades = horizontal && !disabled;
     return (
       <View style={vStyle}>
@@ -473,7 +515,7 @@ export default class Toolbar extends Component {
             horizontal={horizontal}
             style={[flatContainerStyle, showFades && styles.scrollList]}
             keyboardShouldPersistTaps={'always'}
-            keyExtractor={(item, index) => item.action + '-' + index}
+            keyExtractor={(item, index) => (item.action === actions.separator ? 'separator' : item.action) + '-' + index}
             data={this.state.data}
             alwaysBounceHorizontal={false}
             showsHorizontalScrollIndicator={false}
