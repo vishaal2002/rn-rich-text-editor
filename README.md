@@ -35,9 +35,9 @@ npm install react react-native react-native-webview
 ## 🚀 Quick Start
 
 ```tsx
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { View } from 'react-native';
-import { Editor, Toolbar } from 'rn-rich-text-editor';
+import { Editor, Toolbar, ColorPicker } from 'rn-rich-text-editor';
 
 function App() {
   const editorRef = useRef(null);
@@ -129,6 +129,16 @@ Access via `editorRef.current`:
 | `onPressAddImage` | `() => void` | - | Image button handler |
 | `onInsertLink` | `() => void` | - | Link button handler |
 | `insertVideo` | `() => void` | - | Video button handler |
+
+### ColorPicker Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `visible` | `boolean` | `false` | Controls modal visibility |
+| `onClose` | `() => void` | - | Called when modal closes |
+| `onSelectColor` | `(color: string) => void` | - | Called when a color is selected (hex format) |
+| `title` | `string` | `'Text color'` | Modal title text |
+| `initialColor` | `string` | `'#000000'` | Initial selected color (hex format) |
 
 ### Actions
 
@@ -240,6 +250,70 @@ const handleAddImage = () => {
 />
 ```
 
+### ColorPicker
+
+The `ColorPicker` component provides a modal interface for selecting colors with preset options and custom hex input. Perfect for text color (`foreColor`) and highlight color (`hiliteColor`) selection.
+
+```tsx
+import { Editor, Toolbar, ColorPicker, actions } from 'rn-rich-text-editor';
+
+function MyEditor() {
+  const editorRef = useRef(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorPickerType, setColorPickerType] = useState('foreColor');
+  const [selectedColor, setSelectedColor] = useState('#000000');
+
+  const handleColorSelect = (color) => {
+    if (colorPickerType === 'foreColor') {
+      editorRef.current?.setForeColor(color);
+    } else {
+      editorRef.current?.setHiliteColor(color);
+    }
+    setSelectedColor(color);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Editor ref={editorRef} />
+      <Toolbar
+        editor={editorRef}
+        actions={[
+          actions.setBold,
+          actions.setItalic,
+          actions.foreColor,
+          actions.hiliteColor,
+        ]}
+        foreColor={() => {
+          setColorPickerType('foreColor');
+          setShowColorPicker(true);
+        }}
+        hiliteColor={() => {
+          setColorPickerType('hiliteColor');
+          setShowColorPicker(true);
+        }}
+      />
+      <ColorPicker
+        visible={showColorPicker}
+        onClose={() => setShowColorPicker(false)}
+        onSelectColor={handleColorSelect}
+        title={colorPickerType === 'foreColor' ? 'Text Color' : 'Highlight Color'}
+        initialColor={selectedColor}
+      />
+    </View>
+  );
+}
+```
+
+**ColorPicker Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `visible` | `boolean` | `false` | Controls modal visibility |
+| `onClose` | `() => void` | - | Called when modal closes |
+| `onSelectColor` | `(color: string) => void` | - | Called when a color is selected |
+| `title` | `string` | `'Text color'` | Modal title |
+| `initialColor` | `string` | `'#000000'` | Initial selected color |
+
 ### Custom Action Handlers
 
 ```tsx
@@ -298,10 +372,17 @@ editorRef.current?.injectJavascript(`
 ### TypeScript
 
 ```typescript
-import { Editor, Toolbar, EditorRef, EditorProps, actions } from 'rn-rich-text-editor';
+import { Editor, Toolbar, ColorPicker, EditorRef, EditorProps, ColorPickerProps, actions } from 'rn-rich-text-editor';
 
 const editorRef = useRef<EditorRef>(null);
 const props: EditorProps = { placeholder: 'Type...', onChange: (html) => {} };
+const colorPickerProps: ColorPickerProps = {
+  visible: true,
+  onClose: () => {},
+  onSelectColor: (color) => {},
+  title: 'Text Color',
+  initialColor: '#000000',
+};
 ```
 
 ## 🐛 Troubleshooting
