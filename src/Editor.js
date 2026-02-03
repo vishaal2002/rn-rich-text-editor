@@ -282,7 +282,7 @@ export default class Editor extends Component {
       this.setDisable(disabled);
       const { editorStyle } = this.props;
       const baseBg = editorStyle?.backgroundColor ?? '#FFF';
-      this.setContentStyle(disabled ? { backgroundColor: '#C9CED7' } : { backgroundColor: baseBg });
+      this.setContentStyle(disabled ? { backgroundColor: '#F2F4F7' } : { backgroundColor: baseBg });
     }
     if (placeholder !== prevProps.placeholder) {
       this.setPlaceholder(placeholder);
