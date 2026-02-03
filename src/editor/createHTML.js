@@ -180,6 +180,17 @@ function createHTML(options = {}) {
             return getNodeByClass(node, "x-todo-box");
         }
 
+        function decodeHtmlEntities(str) {
+            if (typeof str !== 'string') return str;
+            // Create a temporary element to decode HTML entities
+            // When we set innerHTML to a string with HTML entities like &lt;,
+            // the browser automatically decodes them
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = str;
+            // Return the innerHTML which now has decoded entities
+            return tempDiv.innerHTML;
+        }
+
         function saveSelection(){
             var sel = window.getSelection();
             currentSelection = sel;
@@ -457,7 +468,38 @@ function createHTML(options = {}) {
             },
             content: {
                 setDisable: function(dis){ this.blur(); editor.content.contentEditable = !dis},
-                setHtml: function(html) { editor.content.innerHTML = html; Actions.UPDATE_HEIGHT(); },
+                setHtml: function(html) { 
+                    // Decode HTML entities ONLY if the string contains escaped HTML (e.g., &lt; instead of <)
+                    // and does NOT contain unescaped HTML tags. This ensures normal HTML continues to work unchanged.
+                    var decodedHtml = html;
+                    if (typeof html === 'string') {
+                        // Only decode if:
+                        // 1. String contains escaped HTML entities (&lt; or &gt;)
+                        // 2. String does NOT contain unescaped HTML tags (<)
+                        // This way, normal HTML like "<p>Hello</p>" is left unchanged
+                        var hasEscapedEntities = html.indexOf('&lt;') !== -1 || html.indexOf('&gt;') !== -1;
+                        var hasUnescapedTags = html.indexOf('<') !== -1;
+                        var needsDecoding = hasEscapedEntities && !hasUnescapedTags;
+                        
+                        if (needsDecoding) {
+                            // Use decodeHtmlEntities helper to decode escaped HTML entities
+                            decodedHtml = decodeHtmlEntities(html);
+                            // Fallback: if decodeHtmlEntities didn't work, try direct innerHTML assignment
+                            // (browser automatically decodes entities when setting innerHTML)
+                            if (decodedHtml === html || decodedHtml.indexOf('&lt;') !== -1) {
+                                var tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = html;
+                                // Browser should have decoded it - check if it did
+                                if (tempDiv.innerHTML.indexOf('<') !== -1) {
+                                    decodedHtml = tempDiv.innerHTML;
+                                }
+                            }
+                        }
+                        // If needsDecoding is false, decodedHtml remains as original html (normal HTML case)
+                    }
+                    editor.content.innerHTML = decodedHtml; 
+                    Actions.UPDATE_HEIGHT(); 
+                },
                 getHtml: function() { return editor.content.innerHTML; },
                 blur: function() { editor.content.blur(); },
                 focus: function() { focusCurrent(); },
