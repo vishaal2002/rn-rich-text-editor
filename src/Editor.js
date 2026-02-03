@@ -301,7 +301,7 @@ export default class Editor extends Component {
     const webViewStyle = [
       styles.webview,
       readOnly && stateHeight > 0 ? { height: stateHeight, flex: 0 } : undefined,
-      disabled ? { pointerEvents: 'none' } : undefined,
+      disabled && Platform.OS === 'ios' ? { pointerEvents: 'none' } : undefined,
     ].filter(Boolean);
     return (
       <>
@@ -316,7 +316,7 @@ export default class Editor extends Component {
           ref={that.setRef}
           onMessage={that.onMessage}
           originWhitelist={['*']}
-          dataDetectorTypes={disabled ? 'none' : dataDetectorTypes}
+          dataDetectorTypes={dataDetectorTypes}
           domStorageEnabled={false}
           bounces={false}
           javaScriptEnabled={true}
@@ -349,7 +349,12 @@ export default class Editor extends Component {
     // If set to false, it will not use a View wrapper
     const { useContainer, style, errorMessage, readOnly, disabled } = this.props;
     const errorStyle = !readOnly && errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
-    const disabledStyle = disabled ? { backgroundColor: '#C9CED7', pointerEvents: 'none' } : {};
+    const disabledStyle = disabled
+      ? {
+          backgroundColor: '#C9CED7',
+          ...(Platform.OS === 'ios' ? { pointerEvents: 'none' } : {}),
+        }
+      : {};
     
     // For readonly, remove border from style prop to ensure no border appears
     let containerStyleProp = style;

@@ -1,6 +1,26 @@
 import React, { Component } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { actions } from './actions';
+
+function DefaultForeColorIcon({ tintColor, iconSize }) {
+  const size = iconSize || 20;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: tintColor, fontSize: size - 4, fontWeight: 'bold', lineHeight: size - 4 }}>A</Text>
+      <View style={{ width: size - 2, height: 2, backgroundColor: tintColor, marginTop: -2 }} />
+    </View>
+  );
+}
+
+function DefaultHiliteColorIcon({ tintColor, iconSize }) {
+  const size = iconSize || 20;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: size - 4, fontWeight: 'bold', lineHeight: size - 4, color: tintColor }}>A</Text>
+      <View style={{ position: 'absolute', bottom: 2, left: 0, right: 0, height: size * 0.35, backgroundColor: 'rgba(255,235,59,0.6)' }} />
+    </View>
+  );
+}
 
 const FADE_WIDTH = 24;
 const FADE_STRIPS = 5;
@@ -88,6 +108,8 @@ function getDefaultIcon() {
   texts[actions.align] = require('./img/align_left.png');
   texts[actions.blockquote] = require('./img/blockquote.png');
   texts[actions.line] = require('./img/line.png');
+  texts[actions.foreColor] = (props) => <DefaultForeColorIcon {...props} />;
+  texts[actions.hiliteColor] = (props) => <DefaultHiliteColorIcon {...props} />;
   return texts;
 }
 

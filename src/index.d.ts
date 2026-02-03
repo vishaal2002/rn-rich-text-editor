@@ -158,3 +158,15 @@ export const Editor: React.ComponentType<EditorProps>;
 
 /** Toolbar component for the editor */
 export const Toolbar: React.ComponentType<ToolbarProps>;
+
+/** Color picker props (for use with Toolbar foreColor / hiliteColor) */
+export interface ColorPickerProps {
+  visible?: boolean;
+  onClose?: () => void;
+  onSelectColor?: (color: string) => void;
+  title?: string;
+  initialColor?: string;
+}
+
+/** Color picker modal component */
+export const ColorPicker: React.ComponentType<ColorPickerProps>;
