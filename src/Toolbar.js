@@ -107,7 +107,7 @@ function getDefaultIcon() {
   texts[actions.alignFull] = require('./img/justify_full.png');
   texts[actions.align] = require('./img/align_left.png');
   texts[actions.blockquote] = require('./img/blockquote.png');
-  texts[actions.line] = require('./img/line.png');
+  texts[actions.line] = require('./img/linebreak.png');
   texts[actions.foreColor] = (props) => <DefaultForeColorIcon {...props} />;
   texts[actions.hiliteColor] = (props) => <DefaultHiliteColorIcon {...props} />;
   return texts;
