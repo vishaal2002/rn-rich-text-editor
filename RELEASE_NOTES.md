@@ -1,6 +1,25 @@
 # Release Notes
 
-## Version 1.4.0 (Latest)
+## Version 1.5.0 (Latest)
+
+### Major Feature
+- **XSS Protection**: Added built-in HTML sanitization to protect against cross-site scripting (XSS) attacks
+  - New `sanitizeHtml` prop (default: `true`) controls sanitization behavior
+  - Automatically removes dangerous elements: `<script>`, `<iframe>`, `<object>`, `<embed>`, `<form>`, etc.
+  - Strips event handler attributes: `onclick`, `onerror`, `onload`, etc.
+  - Blocks dangerous URL protocols: `javascript:`, `vbscript:`, `data:`
+  - Sanitizes HTML on paste, insert, and content load operations
+  - Set `sanitizeHtml={false}` only if you fully trust all HTML content sources
+
+### Bug Fixes
+- **Read-Only Layout**: Reduced excessive padding below read-only rich text fields for tighter layout spacing
+
+### TypeScript
+- Added `sanitizeHtml` prop to TypeScript definitions with full documentation
+
+---
+
+## Version 1.4.0
 
 ### Major Feature
 - **ColorPicker Component**: Released ColorPicker component as a stable feature for selecting colors with preset options and custom hex input. Perfect for text color (`foreColor`) and highlight color (`hiliteColor`) selection in the toolbar.
@@ -144,6 +163,7 @@ This is the first major stable release of the React Native Rich Text Editor. Key
 - **v1.2.0**: Enhanced read-only HTML generation and layout improvements
 - **v1.3.0**: Visual toolbar separators and improved read-only styling
 - **v1.4.0**: ColorPicker component released as stable feature
+- **v1.5.0**: XSS protection with HTML sanitization
 
 ### Key Unique Features by Version
 - **v1.0.0**: Core rich text editing functionality
@@ -152,3 +172,4 @@ This is the first major stable release of the React Native Rich Text Editor. Key
 - **v1.3.0**: Toolbar visual enhancements
 - **v1.3.5**: ColorPicker component (introduced)
 - **v1.4.0**: ColorPicker component (stable release)
+- **v1.5.0**: Built-in XSS protection

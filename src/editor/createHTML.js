@@ -26,8 +26,10 @@ function createHTML(options = {}) {
     styleWithCSS = false,
     useCharacter = true,
     defaultHttps = true,
+    // XSS Protection: when true, sanitizes HTML on paste and insert operations
+    sanitizeHtml = true,
   } = options;
-  return `
+  return String.raw`
 <!DOCTYPE html>
 <html>
 <head>
@@ -189,6 +191,90 @@ function createHTML(options = {}) {
             tempDiv.innerHTML = str;
             // Return the innerHTML which now has decoded entities
             return tempDiv.innerHTML;
+        }
+
+        // XSS Protection: HTML Sanitizer
+        var SANITIZE_ENABLED = ${sanitizeHtml};
+        
+        // Dangerous tags that should be completely removed
+        var DANGEROUS_TAGS = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'base', 'link', 'meta', 'noscript', 'template', 'svg', 'math'];
+        
+        // Event handler attributes pattern (matches on*, formaction, etc.)
+        var EVENT_ATTRS_PATTERN = /^(on[a-z]+|formaction|xlink:href|xmlns)$/i;
+        
+        // Dangerous URL protocols
+        var DANGEROUS_URL_PATTERN = /^\s*(javascript|vbscript|data):/i;
+        
+        // Attributes that can contain URLs
+        var URL_ATTRS = ['href', 'src', 'action', 'poster', 'background', 'codebase', 'cite', 'data', 'dynsrc', 'lowsrc'];
+        
+        function sanitizeHtmlString(html) {
+            if (!SANITIZE_ENABLED || typeof html !== 'string' || !html.trim()) {
+                return html;
+            }
+            
+            try {
+                var tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Remove dangerous tags
+                DANGEROUS_TAGS.forEach(function(tagName) {
+                    var elements = tempDiv.querySelectorAll(tagName);
+                    for (var i = elements.length - 1; i >= 0; i--) {
+                        elements[i].parentNode.removeChild(elements[i]);
+                    }
+                });
+                
+                // Process all remaining elements
+                var allElements = tempDiv.querySelectorAll('*');
+                for (var i = 0; i < allElements.length; i++) {
+                    var el = allElements[i];
+                    var attrs = el.attributes;
+                    var attrsToRemove = [];
+                    
+                    // Collect attributes to remove (can't modify while iterating)
+                    for (var j = 0; j < attrs.length; j++) {
+                        var attrName = attrs[j].name.toLowerCase();
+                        var attrValue = attrs[j].value;
+                        
+                        // Remove event handlers
+                        if (EVENT_ATTRS_PATTERN.test(attrName)) {
+                            attrsToRemove.push(attrName);
+                            continue;
+                        }
+                        
+                        // Check URL attributes for dangerous protocols
+                        if (URL_ATTRS.indexOf(attrName) !== -1) {
+                            if (DANGEROUS_URL_PATTERN.test(attrValue)) {
+                                attrsToRemove.push(attrName);
+                                continue;
+                            }
+                        }
+                        
+                        // Remove style expressions (IE-specific XSS vector)
+                        if (attrName === 'style') {
+                            var styleVal = attrValue.toLowerCase();
+                            if (styleVal.indexOf('expression') !== -1 || 
+                                styleVal.indexOf('javascript') !== -1 ||
+                                styleVal.indexOf('behavior') !== -1 ||
+                                styleVal.indexOf('vbscript') !== -1) {
+                                attrsToRemove.push(attrName);
+                            }
+                        }
+                    }
+                    
+                    // Remove collected dangerous attributes
+                    attrsToRemove.forEach(function(attr) {
+                        el.removeAttribute(attr);
+                    });
+                }
+                
+                return tempDiv.innerHTML;
+            } catch (e) {
+                console.log('Sanitization error:', e);
+                // On error, return escaped text to be safe
+                return html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
         }
 
         function saveSelection(){
@@ -418,7 +504,22 @@ function createHTML(options = {}) {
             image: {
                 result: function(url, style) {
                     if (url){
-                        exec('insertHTML', "<img style='"+ (style || '')+"' src='"+ url +"'/>");
+                        // Validate URL to prevent javascript: protocol XSS
+                        if (SANITIZE_ENABLED && DANGEROUS_URL_PATTERN.test(url)) {
+                            console.log('Blocked potentially dangerous image URL');
+                            return;
+                        }
+                        // Sanitize style to prevent expression-based XSS
+                        var safeStyle = style || '';
+                        if (SANITIZE_ENABLED && safeStyle) {
+                            var styleLower = safeStyle.toLowerCase();
+                            if (styleLower.indexOf('expression') !== -1 || 
+                                styleLower.indexOf('javascript') !== -1 ||
+                                styleLower.indexOf('behavior') !== -1) {
+                                safeStyle = '';
+                            }
+                        }
+                        exec('insertHTML', "<img style='"+ safeStyle +"' src='"+ url +"'/>");
                         // This is needed, or the image will not be inserted if the html is empty
                         exec('insertHTML', "<br/>");
                         Actions.UPDATE_HEIGHT();
@@ -428,7 +529,8 @@ function createHTML(options = {}) {
             html: {
                 result: function (html){
                     if (html){
-                        exec('insertHTML', html);
+                        // Sanitize HTML before inserting to prevent XSS
+                        exec('insertHTML', sanitizeHtmlString(html));
                         Actions.UPDATE_HEIGHT();
                     }
                 }
@@ -437,8 +539,23 @@ function createHTML(options = {}) {
             video: {
                 result: function(url, style) {
                     if (url) {
+                        // Validate URL to prevent javascript: protocol XSS
+                        if (SANITIZE_ENABLED && DANGEROUS_URL_PATTERN.test(url)) {
+                            console.log('Blocked potentially dangerous video URL');
+                            return;
+                        }
+                        // Sanitize style to prevent expression-based XSS
+                        var safeStyle = style || '';
+                        if (SANITIZE_ENABLED && safeStyle) {
+                            var styleLower = safeStyle.toLowerCase();
+                            if (styleLower.indexOf('expression') !== -1 || 
+                                styleLower.indexOf('javascript') !== -1 ||
+                                styleLower.indexOf('behavior') !== -1) {
+                                safeStyle = '';
+                            }
+                        }
                         var thumbnail = url.replace(/.(mp4|m3u8)/g, '') + '-thumbnail';
-                        var html = "<br><div style='"+ (style || '')+"'><video src='"+ url +"' poster='"+ thumbnail + "' controls><source src='"+ url +"' type='video/mp4'>No video tag support</video></div><br>";
+                        var html = "<br><div style='"+ safeStyle +"'><video src='"+ url +"' poster='"+ thumbnail + "' controls><source src='"+ url +"' type='video/mp4'>No video tag support</video></div><br>";
                         exec('insertHTML', html);
                         Actions.UPDATE_HEIGHT();
                     }
@@ -497,7 +614,8 @@ function createHTML(options = {}) {
                         }
                         // If needsDecoding is false, decodedHtml remains as original html (normal HTML case)
                     }
-                    editor.content.innerHTML = decodedHtml; 
+                    // Sanitize HTML before setting to prevent XSS
+                    editor.content.innerHTML = sanitizeHtmlString(decodedHtml); 
                     Actions.UPDATE_HEIGHT(); 
                 },
                 getHtml: function() { return editor.content.innerHTML; },
@@ -727,14 +845,16 @@ function createHTML(options = {}) {
                     exec("insertText", text);
                 } else if (html && html.trim() !== '') {
                     e.preventDefault();
-                    exec("insertHTML", html);
+                    // Sanitize HTML before inserting to prevent XSS
+                    exec("insertHTML", sanitizeHtmlString(html));
                 } else if (text && (text.indexOf('&lt;') !== -1 || text.indexOf('<') !== -1)) {
                     var htmlFromText = text.indexOf('&lt;') !== -1
                         ? text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
                         : text;
                     if (htmlFromText.indexOf('<') !== -1) {
                         e.preventDefault();
-                        exec("insertHTML", htmlFromText);
+                        // Sanitize HTML before inserting to prevent XSS
+                        exec("insertHTML", sanitizeHtmlString(htmlFromText));
                     }
                 }
             });
@@ -835,6 +955,8 @@ function createReadOnlyHTML(options = {}) {
     contentCSSText = '',
     cssText = '',
     initialCSSText = '',
+    // XSS Protection: when true, sanitizes HTML content before rendering
+    sanitizeHtml = true,
   } = options;
   const escapedContent = escapeForScript(content);
   const useDefaultFont =
@@ -877,15 +999,70 @@ function createReadOnlyHTML(options = {}) {
     <div id="readonly-content" class="readonly-container"></div>
     <script>
         (function() {
+            var SANITIZE_ENABLED = ${sanitizeHtml};
+            var DANGEROUS_TAGS = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'base', 'link', 'meta', 'noscript', 'template', 'svg', 'math'];
+            var EVENT_ATTRS_PATTERN = /^(on[a-z]+|formaction|xlink:href|xmlns)$/i;
+            var DANGEROUS_URL_PATTERN = /^\\s*(javascript|vbscript|data):/i;
+            var URL_ATTRS = ['href', 'src', 'action', 'poster', 'background', 'codebase', 'cite', 'data', 'dynsrc', 'lowsrc'];
+            
+            function sanitizeHtmlString(html) {
+                if (!SANITIZE_ENABLED || typeof html !== 'string' || !html.trim()) {
+                    return html;
+                }
+                try {
+                    var tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    DANGEROUS_TAGS.forEach(function(tagName) {
+                        var elements = tempDiv.querySelectorAll(tagName);
+                        for (var i = elements.length - 1; i >= 0; i--) {
+                            elements[i].parentNode.removeChild(elements[i]);
+                        }
+                    });
+                    var allElements = tempDiv.querySelectorAll('*');
+                    for (var i = 0; i < allElements.length; i++) {
+                        var el = allElements[i];
+                        var attrs = el.attributes;
+                        var attrsToRemove = [];
+                        for (var j = 0; j < attrs.length; j++) {
+                            var attrName = attrs[j].name.toLowerCase();
+                            var attrValue = attrs[j].value;
+                            if (EVENT_ATTRS_PATTERN.test(attrName)) {
+                                attrsToRemove.push(attrName);
+                                continue;
+                            }
+                            if (URL_ATTRS.indexOf(attrName) !== -1 && DANGEROUS_URL_PATTERN.test(attrValue)) {
+                                attrsToRemove.push(attrName);
+                                continue;
+                            }
+                            if (attrName === 'style') {
+                                var styleVal = attrValue.toLowerCase();
+                                if (styleVal.indexOf('expression') !== -1 || 
+                                    styleVal.indexOf('javascript') !== -1 ||
+                                    styleVal.indexOf('behavior') !== -1 ||
+                                    styleVal.indexOf('vbscript') !== -1) {
+                                    attrsToRemove.push(attrName);
+                                }
+                            }
+                        }
+                        attrsToRemove.forEach(function(attr) {
+                            el.removeAttribute(attr);
+                        });
+                    }
+                    return tempDiv.innerHTML;
+                } catch (e) {
+                    return html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                }
+            }
+            
             var content = "${escapedContent}";
             var el = document.getElementById('readonly-content');
             if (el) {
-                el.innerHTML = content;
+                el.innerHTML = sanitizeHtmlString(content);
                 var lastH = 0;
                 var sendHeight = function() {
                     var scrollH = el.scrollHeight;
                     var offsetH = el.offsetHeight;
-                    var h = Math.ceil(Math.max(scrollH, offsetH)) + 16;
+                    var h = Math.ceil(Math.max(scrollH, offsetH)) + 8;
                     if (h !== lastH && window.ReactNativeWebView) {
                         lastH = h;
                         window.ReactNativeWebView.postMessage(JSON.stringify({type: 'OFFSET_HEIGHT', data: h}));

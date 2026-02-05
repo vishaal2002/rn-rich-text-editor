@@ -61,6 +61,13 @@ export interface EditorProps {
   onLink?: (data: unknown) => void;
   onHeightChange?: (height: number) => void;
   errorMessage?: string;
+  /**
+   * XSS Protection: when true (default), sanitizes HTML on paste and insert operations.
+   * This removes dangerous elements (script, iframe, etc.) and event handlers (onclick, onerror, etc.).
+   * Set to false only if you trust all HTML content sources.
+   * @default true
+   */
+  sanitizeHtml?: boolean;
   [key: string]: unknown;
 }
 

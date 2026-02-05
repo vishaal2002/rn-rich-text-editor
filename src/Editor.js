@@ -26,6 +26,8 @@ export default class Editor extends Component {
     editorInitializedCallback: () => {},
     initialHeight: 0,
     dataDetectorTypes: ['none'],
+    // XSS Protection: when true, sanitizes HTML on paste and insert operations (default: true)
+    sanitizeHtml: true,
   };
 
   constructor(props) {
@@ -75,6 +77,7 @@ export default class Editor extends Component {
       useCharacter,
       defaultHttps,
       initialContentHTML,
+      sanitizeHtml,
     } = props;
     const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html && html.html)) || '';
     that.state = {
@@ -87,6 +90,7 @@ export default class Editor extends Component {
               initialCSSText,
               cssText,
               contentCSSText,
+              sanitizeHtml,
             })
           : (html ||
             createHTML({
@@ -112,6 +116,7 @@ export default class Editor extends Component {
               styleWithCSS,
               useCharacter,
               defaultHttps,
+              sanitizeHtml,
             })),
       },
       keyboardHeight: 0,
@@ -254,7 +259,7 @@ export default class Editor extends Component {
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
-    const { editorStyle, disabled, placeholder, readOnly, initialContentHTML, html } = this.props;
+    const { editorStyle, disabled, placeholder, readOnly, initialContentHTML, html, sanitizeHtml } = this.props;
     if (readOnly) {
       const contentChanged = initialContentHTML !== prevProps.initialContentHTML || html !== prevProps.html;
       if (prevProps.readOnly !== readOnly || contentChanged || prevProps.editorStyle !== editorStyle) {
@@ -269,6 +274,7 @@ export default class Editor extends Component {
               initialCSSText,
               cssText,
               contentCSSText,
+              sanitizeHtml,
             }),
           },
         });
