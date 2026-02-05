@@ -120,7 +120,7 @@ export default class Editor extends Component {
             })),
       },
       keyboardHeight: 0,
-      height: readOnly ? 1 : (initialHeight > 0 ? initialHeight : DEFAULT_EDITOR_HEIGHT),
+      height: readOnly ? 0 : (initialHeight > 0 ? initialHeight : DEFAULT_EDITOR_HEIGHT),
     };
     that.focusListeners = [];
   }
@@ -306,7 +306,7 @@ export default class Editor extends Component {
     // Don't apply style prop to WebView to avoid double borders - style is only for container
     const webViewStyle = [
       styles.webview,
-      readOnly && stateHeight > 0 ? { height: stateHeight, flex: 0 } : undefined,
+      readOnly && stateHeight > 0 ? { height: stateHeight, flex: 0 } : (readOnly ? { flex: 1 } : undefined),
       disabled && Platform.OS === 'ios' ? { pointerEvents: 'none' } : undefined,
     ].filter(Boolean);
     return (
@@ -385,10 +385,15 @@ export default class Editor extends Component {
     // readOnlyStyle after containerStyleProp to ensure border is removed
     const containerStyle = [containerStyleProp, errorStyle, { overflow: 'hidden' }, readOnlyStyle, disabledStyle];
     if (useContainer) {
-      containerStyle.push({ height });
-      // For readonly, ensure container expands fully to show all content without scrolling
-      if (readOnly && height > 0) {
-        containerStyle.push({ minHeight: height, maxHeight: height });
+      // For readonly with height 0, don't constrain - let it expand for measurement
+      if (readOnly && height === 0) {
+        containerStyle.push({ minHeight: 1 });
+      } else {
+        containerStyle.push({ height });
+        // For readonly, ensure container expands fully to show all content without scrolling
+        if (readOnly && height > 0) {
+          containerStyle.push({ minHeight: height, maxHeight: height });
+        }
       }
     }
     

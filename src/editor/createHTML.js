@@ -969,7 +969,7 @@ function createReadOnlyHTML(options = {}) {
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; overflow: hidden; height: auto !important; min-height: 0 !important; }
+        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
         body { background-color: ${backgroundColor}; color: ${color}; }
         .readonly-container {
             ${useDefaultFont ? 'font-family: Arial, Helvetica, sans-serif; font-size: 1em;' : ''}
@@ -984,11 +984,23 @@ function createReadOnlyHTML(options = {}) {
         .readonly-container > *:first-child {
             margin-top: 0 !important;
         }
+        .readonly-container > *:last-child {
+            margin-bottom: 0 !important;
+        }
         .readonly-container p {
             margin-top: 0;
             margin-bottom: 0.5em;
         }
         .readonly-container p:last-child {
+            margin-bottom: 0;
+        }
+        .readonly-container ul,
+        .readonly-container ol {
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-left: 1.5em;
+        }
+        .readonly-container li {
             margin-bottom: 0;
         }
     </style>
@@ -1062,7 +1074,8 @@ function createReadOnlyHTML(options = {}) {
                 var sendHeight = function() {
                     var scrollH = el.scrollHeight;
                     var offsetH = el.offsetHeight;
-                    var h = Math.ceil(Math.max(scrollH, offsetH));
+                    var boundingH = el.getBoundingClientRect().height;
+                    var h = Math.ceil(Math.max(scrollH, offsetH, boundingH));
                     if (h !== lastH && window.ReactNativeWebView) {
                         lastH = h;
                         window.ReactNativeWebView.postMessage(JSON.stringify({type: 'OFFSET_HEIGHT', data: h}));
@@ -1071,6 +1084,7 @@ function createReadOnlyHTML(options = {}) {
                 setTimeout(sendHeight, 0);
                 requestAnimationFrame(function() { requestAnimationFrame(sendHeight); });
                 setTimeout(sendHeight, 100);
+                setTimeout(sendHeight, 200);
                 if (typeof ResizeObserver !== 'undefined') {
                     try {
                         new ResizeObserver(sendHeight).observe(el);
