@@ -1,6 +1,13 @@
 # Release Notes
 
-## Version 1.5.0 (Latest)
+## Version 1.5.1 (Latest)
+
+### Bug Fixes
+- **Read-Only Layout**: Removed extra padding below read-only rich text fields for tighter layout spacing
+
+---
+
+## Version 1.5.0
 
 ### Major Feature
 - **XSS Protection**: Added built-in HTML sanitization to protect against cross-site scripting (XSS) attacks
