@@ -1,6 +1,6 @@
 {
   "name": "rn-rich-text-editor",
-  "version": "1.5.0",
+  "version": "1.6.0-beta.1",
   "description": "A rich text editor component for React Native",
   "keywords": [
     "react-native",

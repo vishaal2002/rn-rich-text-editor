@@ -68,6 +68,19 @@ export interface EditorProps {
    * @default true
    */
   sanitizeHtml?: boolean;
+  /**
+   * Markdown shortcuts: when true, typing markdown syntax followed by space converts to formatted text.
+   * Supported patterns:
+   * - **bold** or __bold__ → bold
+   * - *italic* or _italic_ → italic
+   * - ***bold italic*** → bold + italic
+   * - ~~strikethrough~~ → strikethrough
+   * - `code` → inline code
+   * 
+   * Use backslash to escape: \**not bold**
+   * @default false
+   */
+  markdownShortcuts?: boolean;
   [key: string]: unknown;
 }
 

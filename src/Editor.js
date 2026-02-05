@@ -28,6 +28,8 @@ export default class Editor extends Component {
     dataDetectorTypes: ['none'],
     // XSS Protection: when true, sanitizes HTML on paste and insert operations (default: true)
     sanitizeHtml: true,
+    // Markdown shortcuts: when true, typing **bold** + space converts to bold, etc.
+    markdownShortcuts: false,
   };
 
   constructor(props) {
@@ -78,6 +80,7 @@ export default class Editor extends Component {
       defaultHttps,
       initialContentHTML,
       sanitizeHtml,
+      markdownShortcuts,
     } = props;
     const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html && html.html)) || '';
     that.state = {
@@ -117,6 +120,7 @@ export default class Editor extends Component {
               useCharacter,
               defaultHttps,
               sanitizeHtml,
+              markdownShortcuts,
             })),
       },
       keyboardHeight: 0,

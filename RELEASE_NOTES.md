@@ -1,5 +1,21 @@
 # Release Notes
 
+## Version 1.6.0-beta.1 (Beta)
+
+### New Feature
+- **Markdown Shortcuts**: Type markdown syntax and press space to auto-convert to formatted text
+  - New `markdownShortcuts` prop (default: `false`) enables this feature
+  - Supported patterns:
+    - `**bold**` or `__bold__` → **bold**
+    - `*italic*` or `_italic_` → *italic*
+    - `***bold italic***` or `___bold italic___` → ***bold italic***
+    - `~~strikethrough~~` → ~~strikethrough~~
+    - `` `code` `` → `code`
+  - Use backslash to escape: `\**not bold**` keeps the asterisks
+  - Undo (Ctrl+Z / Cmd+Z) immediately reverses the conversion
+
+---
+
 ## Version 1.5.0 (Latest)
 
 ### Major Feature

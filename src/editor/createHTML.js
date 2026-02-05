@@ -28,6 +28,8 @@ function createHTML(options = {}) {
     defaultHttps = true,
     // XSS Protection: when true, sanitizes HTML on paste and insert operations
     sanitizeHtml = true,
+    // Markdown shortcuts: when true, typing **bold** + space converts to bold, etc.
+    markdownShortcuts = false,
   } = options;
   return String.raw`
 <!DOCTYPE html>
@@ -275,6 +277,145 @@ function createHTML(options = {}) {
                 // On error, return escaped text to be safe
                 return html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
             }
+        }
+
+        // Markdown Shortcuts Feature
+        var MARKDOWN_SHORTCUTS_ENABLED = ${markdownShortcuts};
+        
+        // Markdown patterns: order matters - check longer/more specific patterns first
+        // Using simpler patterns without lookbehind for better compatibility
+        var MARKDOWN_PATTERNS = [
+            // Bold + Italic (must come before bold and italic)
+            { pattern: /\*\*\*(.+?)\*\*\*$/, format: ['bold', 'italic'], marker: '***' },
+            { pattern: /___(.+?)___$/, format: ['bold', 'italic'], marker: '___' },
+            // Bold
+            { pattern: /\*\*(.+?)\*\*$/, format: ['bold'], marker: '**' },
+            { pattern: /__(.+?)__$/, format: ['bold'], marker: '__' },
+            // Strikethrough (before italic to avoid conflicts)
+            { pattern: /~~(.+?)~~$/, format: ['strikeThrough'], marker: '~~' },
+            // Italic (using non-greedy match with boundaries)
+            { pattern: /(?:^|[^*])\*([^*]+?)\*$/, format: ['italic'], marker: '*', captureGroup: 1 },
+            { pattern: /(?:^|[^_])_([^_]+?)_$/, format: ['italic'], marker: '_', captureGroup: 1 },
+            // Inline code - using RegExp constructor with char codes to avoid template literal issues
+            { pattern: new RegExp(String.fromCharCode(96) + '(.+?)' + String.fromCharCode(96) + '$'), format: ['code'], marker: String.fromCharCode(96), captureGroup: 1 }
+        ];
+        
+        function getTextBeforeCursor() {
+            var sel = window.getSelection();
+            if (!sel.rangeCount) return { text: '', range: null };
+            
+            var range = sel.getRangeAt(0);
+            if (!range.collapsed) return { text: '', range: null };
+            
+            var node = range.startContainer;
+            if (node.nodeType !== Node.TEXT_NODE) return { text: '', range: null };
+            
+            var text = node.textContent.substring(0, range.startOffset);
+            return { text: text, range: range, node: node, offset: range.startOffset };
+        }
+        
+        function processMarkdownShortcuts() {
+            if (!MARKDOWN_SHORTCUTS_ENABLED) return false;
+            
+            var cursorInfo = getTextBeforeCursor();
+            if (!cursorInfo.text) return false;
+            
+            var text = cursorInfo.text;
+            
+            // Check for escaped patterns (backslash before marker)
+            // Simple escape: if the pattern starts with backslash, don't convert
+            // e.g., \**text** should not become bold
+            var backslashIdx = text.lastIndexOf('\\');
+            if (backslashIdx >= 0) {
+                // Check if there's an escaped markdown pattern
+                var afterBackslash = text.substring(backslashIdx + 1);
+                for (var i = 0; i < MARKDOWN_PATTERNS.length; i++) {
+                    var p = MARKDOWN_PATTERNS[i];
+                    var simplePattern = p.marker === '*' ? /^\*+.+?\*+$/ :
+                                       p.marker === '_' ? /^_+.+?_+$/ :
+                                       p.marker === '~' ? /^~~.+?~~$/ :
+                                       p.marker.charCodeAt(0) === 96 ? new RegExp('^' + String.fromCharCode(96) + '.+?' + String.fromCharCode(96) + String.fromCharCode(36)) : null;
+                    if (simplePattern && simplePattern.test(afterBackslash)) {
+                        // Remove just the backslash
+                        var node = cursorInfo.node;
+                        var beforeBackslash = node.textContent.substring(0, backslashIdx);
+                        var afterContent = node.textContent.substring(backslashIdx + 1);
+                        node.textContent = beforeBackslash + afterContent;
+                        
+                        // Restore cursor position (one less due to removed backslash)
+                        var newOffset = cursorInfo.offset - 1;
+                        var newRange = document.createRange();
+                        newRange.setStart(node, newOffset);
+                        newRange.collapse(true);
+                        var sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(newRange);
+                        
+                        return true;
+                    }
+                }
+            }
+            
+            // Check for markdown patterns
+            for (var i = 0; i < MARKDOWN_PATTERNS.length; i++) {
+                var p = MARKDOWN_PATTERNS[i];
+                var match = text.match(p.pattern);
+                if (match) {
+                    // Get content from the appropriate capture group
+                    var captureIdx = p.captureGroup || 1;
+                    var content = match[captureIdx];
+                    var fullMatch = match[0];
+                    var startPos = cursorInfo.offset - fullMatch.length;
+                    
+                    // Delete the markdown text
+                    var node = cursorInfo.node;
+                    var beforeText = node.textContent.substring(0, startPos);
+                    var afterText = node.textContent.substring(cursorInfo.offset);
+                    node.textContent = beforeText + afterText;
+                    
+                    // Position cursor at the start of where we'll insert
+                    var range = document.createRange();
+                    range.setStart(node, startPos);
+                    range.collapse(true);
+                    var sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    
+                    // Apply formatting using insertHTML for code, execCommand for others
+                    if (p.format.indexOf('code') !== -1) {
+                        // For inline code, use a styled span
+                        var codeHtml = '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">' + content + '</code>';
+                        exec('insertHTML', codeHtml);
+                    } else {
+                        // For other formats, insert text then apply formatting
+                        // We need to select the text after inserting to apply format
+                        exec('insertText', content);
+                        
+                        // Select the inserted text
+                        var newSel = window.getSelection();
+                        var newRange = document.createRange();
+                        var currentNode = newSel.anchorNode;
+                        var currentOffset = newSel.anchorOffset;
+                        
+                        newRange.setStart(currentNode, currentOffset - content.length);
+                        newRange.setEnd(currentNode, currentOffset);
+                        newSel.removeAllRanges();
+                        newSel.addRange(newRange);
+                        
+                        // Apply each format
+                        for (var j = 0; j < p.format.length; j++) {
+                            exec(p.format[j]);
+                        }
+                        
+                        // Collapse selection to end
+                        newSel.collapseToEnd();
+                    }
+                    
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         function saveSelection(){
@@ -772,6 +913,16 @@ function createHTML(options = {}) {
             function handleKeydown(event){
                 _keyDown = true;
                  handleState();
+                // Markdown shortcuts: process on space key
+                if (event.key === ' ' && MARKDOWN_SHORTCUTS_ENABLED) {
+                    if (processMarkdownShortcuts()) {
+                        // Markdown was converted, insert the space and prevent default
+                        exec('insertText', ' ');
+                        event.preventDefault();
+                        Actions.UPDATE_HEIGHT();
+                        return;
+                    }
+                }
                 if (event.key === 'Enter'){
                     enterStatus = 1; // set enter true
                     var box;
@@ -1062,7 +1213,7 @@ function createReadOnlyHTML(options = {}) {
                 var sendHeight = function() {
                     var scrollH = el.scrollHeight;
                     var offsetH = el.offsetHeight;
-                    var h = Math.ceil(Math.max(scrollH, offsetH)) + 8;
+                    var h = Math.ceil(Math.max(scrollH, offsetH)) + 4;
                     if (h !== lastH && window.ReactNativeWebView) {
                         lastH = h;
                         window.ReactNativeWebView.postMessage(JSON.stringify({type: 'OFFSET_HEIGHT', data: h}));
