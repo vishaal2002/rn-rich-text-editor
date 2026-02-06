@@ -6,7 +6,7 @@
 
 **A powerful and customizable rich text editor built natively for React Native. Everything included, nothing missing.**
 
-![Demo](https://raw.githubusercontent.com/vishaal2002/rn-rich-text-editor/main/Demo-ezgif.com-optimize.gif)
+![Demo](https://raw.githubusercontent.com/vishaal2002/rn-rich-text-editor/main/Demo.gif)
 
 ## ✨ Features
 
