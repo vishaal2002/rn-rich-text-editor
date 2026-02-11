@@ -1,6 +1,16 @@
 # Release Notes
 
-## Version 1.5.1 (Latest)
+## Version 1.5.5 (Latest)
+
+### Bug Fixes
+- **Editable scroll**: Scrolling inside the editor to view large content now works for editable fields
+  - WebView `scrollEnabled` and `nestedScrollEnabled` enabled only when `readOnly` is false
+  - When `useContainer` is true, body and content use scrollable layout (`overflow-y: auto`, content grows with height) so the editor can be scrolled when content exceeds the visible area
+- **Read-only unchanged**: Read-only mode remains non-scrollable (content expands to full height)
+
+---
+
+## Version 1.5.1
 
 ### Bug Fixes
 - **Read-Only Layout**: Removed extra padding below read-only rich text fields for tighter layout spacing
