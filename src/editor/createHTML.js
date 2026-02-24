@@ -33,14 +33,18 @@ function createHTML(options = {}) {
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>RN Rich Text Editor</title>
     <meta name="viewport" content="user-scalable=1.0,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap" rel="stylesheet">
     <style>
         ${initialCSSText}
         * {outline: 0px solid transparent;-webkit-tap-highlight-color: rgba(0,0,0,0);-webkit-touch-callout: none;box-sizing: border-box;}
-        html, body { margin: 0; padding: 0;font-family: "Inter-Regular", "Inter", -apple-system, sans-serif; font-size:1em; min-height: 100%;}
+        html, body { margin: 0; padding: 0; font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em; min-height: 100%; }
         body { overflow-y: auto; -webkit-overflow-scrolling: touch;background-color: ${backgroundColor};caret-color: ${caretColor};${useContainer ? ' height: auto;' : ' height: 100%;'}}
-        .content {font-family: "Inter-Regular", "Inter", -apple-system, sans-serif;color: ${color}; width: 100%;${useContainer ? 'min-height: 100%;' : 'height:100%;'
+        .content { font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: ${color}; width: 100%;${useContainer ? 'min-height: 100%;' : 'height:100%;'
     }-webkit-overflow-scrolling: touch;padding-left: 0;padding-right: 0;}
         .pell { ${useContainer ? 'min-height: 100%;' : 'height: 100%;'} } .pell-content { outline: 0; padding: 10px; ${useContainer ? 'min-height: 100%;' : 'overflow-y: auto; height: 100%;'} ${contentCSSText}}
     </style>
@@ -184,13 +188,31 @@ function createHTML(options = {}) {
 
         function decodeHtmlEntities(str) {
             if (typeof str !== 'string') return str;
-            // Create a temporary element to decode HTML entities
-            // When we set innerHTML to a string with HTML entities like &lt;,
-            // the browser automatically decodes them
+            // Create a temporary element to decode HTML entities (handles &lt;, &amp;lt;, etc.)
             var tempDiv = document.createElement('div');
             tempDiv.innerHTML = str;
-            // Return the innerHTML which now has decoded entities
             return tempDiv.innerHTML;
+        }
+
+        // When pasting a full document, extract body content so contenteditable renders it correctly
+        function extractBodyFragment(html) {
+            if (typeof html !== 'string' || !html.trim()) return html;
+            var lower = html.toLowerCase();
+            if (lower.indexOf('<!doctype') === -1 && lower.indexOf('<html') === -1 && lower.indexOf('<body') === -1) {
+                return html;
+            }
+            try {
+                var doc = document.createElement('div');
+                doc.innerHTML = html;
+                var body = doc.querySelector('body');
+                if (body && body.innerHTML) return body.innerHTML.trim();
+                var htmlEl = doc.querySelector('html');
+                if (htmlEl && htmlEl.innerHTML) return htmlEl.innerHTML.trim();
+                // Fallback: regex extract when parser doesn't create body (e.g. in div)
+                var bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                if (bodyMatch && bodyMatch[1]) return bodyMatch[1].trim();
+            } catch (e) {}
+            return html;
         }
 
         // XSS Protection: HTML Sanitizer
@@ -836,25 +858,33 @@ function createHTML(options = {}) {
             addEventListener(content, 'focus', handleFocus);
             addEventListener(content, 'paste', function (e) {
                 var clipboardData = (e.originalEvent || e).clipboardData;
+                if (!clipboardData) return;
                 var text = clipboardData.getData('text/plain');
                 var html = clipboardData.getData('text/html');
 
                 ${pasteListener} && postAction({type: 'CONTENT_PASTED', data: text || html});
                 if (${pasteAsPlainText}) {
                     e.preventDefault();
-                    exec("insertText", text);
+                    exec("insertText", text || '');
                 } else if (html && html.trim() !== '') {
                     e.preventDefault();
-                    // Sanitize HTML before inserting to prevent XSS
-                    exec("insertHTML", sanitizeHtmlString(html));
-                } else if (text && (text.indexOf('&lt;') !== -1 || text.indexOf('<') !== -1)) {
-                    var htmlFromText = text.indexOf('&lt;') !== -1
-                        ? text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-                        : text;
-                    if (htmlFromText.indexOf('<') !== -1) {
+                    var lower = html.toLowerCase();
+                    var isFullDocument = lower.indexOf('<!doctype') !== -1 || lower.indexOf('<html') !== -1 || lower.indexOf('<body') !== -1;
+                    var toInsert = isFullDocument ? extractBodyFragment(html) : html;
+                    exec("insertHTML", sanitizeHtmlString(toInsert));
+                } else if (text && text.trim() !== '') {
+                    var looksLikeHtml = /<[a-z][\s\S]*>/i.test(text) || text.indexOf('&lt;') !== -1;
+                    if (looksLikeHtml) {
                         e.preventDefault();
-                        // Sanitize HTML before inserting to prevent XSS
-                        exec("insertHTML", sanitizeHtmlString(htmlFromText));
+                        var htmlFromText = decodeHtmlEntities(text);
+                        if (htmlFromText.indexOf('<') !== -1) {
+                            var lowerText = htmlFromText.toLowerCase();
+                            var isFullDoc = lowerText.indexOf('<!doctype') !== -1 || lowerText.indexOf('<html') !== -1 || lowerText.indexOf('<body') !== -1;
+                            var toInsertText = isFullDoc ? extractBodyFragment(htmlFromText) : htmlFromText;
+                            exec("insertHTML", sanitizeHtmlString(toInsertText));
+                        } else {
+                            exec("insertText", text);
+                        }
                     }
                 }
             });
@@ -965,14 +995,18 @@ function createReadOnlyHTML(options = {}) {
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <meta name="viewport" content="user-scalable=1.0,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap" rel="stylesheet">
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: "Inter-Regular", "Inter", -apple-system, sans-serif; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
+        html, body { margin: 0; padding: 0; font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
         body { background-color: ${backgroundColor}; color: ${color}; }
         .readonly-container {
-            ${useDefaultFont ? 'font-family: "Inter-Regular", "Inter", -apple-system, sans-serif; font-size: 1em;' : ''}
+            ${useDefaultFont ? 'font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em;' : ''}
             color: ${color};
             padding: 0;
             margin: 0;
