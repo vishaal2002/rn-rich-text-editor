@@ -45,6 +45,7 @@ export default class Editor extends Component {
     that.unmount = false;
     that._keyOpen = false;
     that._focus = false;
+    that._skipNextContentBlur = false;
     that.layout = {};
     that.selectionChangeListeners = [];
     const {
@@ -202,7 +203,8 @@ export default class Editor extends Component {
           break;
         case messages.CONTENT_BLUR:
           that._focus = false;
-          onBlur?.();
+          if (!that._skipNextContentBlur) onBlur?.();
+          that._skipNextContentBlur = false;
           break;
         case messages.CONTENT_CHANGE:
           onChange?.(data);
@@ -380,9 +382,16 @@ export default class Editor extends Component {
     }
     
     const readOnlyStyle = readOnly ? { borderWidth: 0, borderColor: 'transparent' } : {};
-    // On iOS, overflow: 'hidden' on the same View as the border clips the border at corners.
-    // So we keep the border on the outer View and put overflow: 'hidden' on an inner wrapper only.
-    const containerStyle = [containerStyleProp, errorStyle, readOnlyStyle, disabledStyle];
+    // On iOS, overflow: 'hidden' on the same View as the border clips the border at corners, so we use an inner wrapper.
+    // On Android, overflow on the container is needed; inner wrapper causes top-edge clipping.
+    const useInnerClipWrapper = PlatformIOS;
+    const containerStyle = [
+      containerStyleProp,
+      errorStyle,
+      useInnerClipWrapper ? null : { overflow: 'hidden' },
+      readOnlyStyle,
+      disabledStyle,
+    ].filter(Boolean);
     if (useContainer) {
       // For readonly with height 0, don't constrain - let it expand for measurement
       if (readOnly && height === 0) {
@@ -395,19 +404,20 @@ export default class Editor extends Component {
         }
       }
     }
-    const innerClipStyle = { flex: 1, overflow: 'hidden' };
+    const innerClipStyle = useInnerClipWrapper ? { flex: 1, overflow: 'hidden' } : null;
+    const webViewContent = useInnerClipWrapper ? (
+      <View style={innerClipStyle}>{this.renderWebView()}</View>
+    ) : (
+      this.renderWebView()
+    );
 
     return useContainer ? (
       <View style={containerStyle} onLayout={this.onViewLayout}>
-        <View style={innerClipStyle}>
-          {this.renderWebView()}
-        </View>
+        {webViewContent}
       </View>
     ) : (
       <View style={containerStyle}>
-        <View style={innerClipStyle}>
-          {this.renderWebView()}
-        </View>
+        {webViewContent}
       </View>
     );
   }
@@ -537,7 +547,14 @@ export default class Editor extends Component {
   }
 
   dismissKeyboard() {
-    this._focus ? this.blurContentEditor() : Keyboard.dismiss();
+    if (this._focus) {
+      this._focus = false;
+      this.props.onBlur?.();
+      this._skipNextContentBlur = true;
+      this.blurContentEditor();
+    } else {
+      Keyboard.dismiss();
+    }
   }
 
   get isKeyboardOpen() {

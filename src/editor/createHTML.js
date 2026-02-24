@@ -188,10 +188,43 @@ function createHTML(options = {}) {
 
         function decodeHtmlEntities(str) {
             if (typeof str !== 'string') return str;
-            // Create a temporary element to decode HTML entities (handles &lt;, &amp;lt;, etc.)
             var tempDiv = document.createElement('div');
             tempDiv.innerHTML = str;
             return tempDiv.innerHTML;
+        }
+
+        // Decode entity-encoded HTML that appears inside elements as text (e.g. <div>&lt;h1&gt;Hi&lt;/h1&gt;</div>).
+        // The browser parses that to a text node "<h1>Hi</h1>" but re-serializes as &lt;&gt; so one decodeHtmlEntities pass is not enough.
+        function decodeNestedEntityHtml(html) {
+            if (typeof html !== 'string' || !html.trim()) return html;
+            var wrap = document.createElement('div');
+            wrap.innerHTML = html;
+            function decodeTextInNode(node) {
+                if (node.nodeType === 3) {
+                    var text = node.data;
+                    var hasEncoded = text.indexOf('&lt;') !== -1 || text.indexOf('&gt;') !== -1;
+                    var raw = hasEncoded
+                        ? text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+                        : text;
+                    if (raw.indexOf('<') !== -1 && /<[a-z\/\!]/i.test(raw)) {
+                        var temp = document.createElement('div');
+                        temp.innerHTML = raw;
+                        var parent = node.parentNode;
+                        if (temp.firstChild) {
+                            while (temp.firstChild) {
+                                parent.insertBefore(temp.firstChild, node);
+                            }
+                            parent.removeChild(node);
+                        }
+                    }
+                } else if (node.nodeType === 1 && node.childNodes && node.childNodes.length) {
+                    for (var j = node.childNodes.length - 1; j >= 0; j--) {
+                        decodeTextInNode(node.childNodes[j]);
+                    }
+                }
+            }
+            decodeTextInNode(wrap);
+            return wrap.innerHTML;
         }
 
         // When pasting a full document, extract body content so contenteditable renders it correctly
@@ -874,6 +907,7 @@ function createHTML(options = {}) {
                     var isFullDocument = lower.indexOf('<!doctype') !== -1 || lower.indexOf('<html') !== -1 || lower.indexOf('<body') !== -1;
                     var toInsert = isFullDocument ? extractBodyFragment(html) : html;
                     toInsert = decodeHtmlEntities(toInsert);
+                    toInsert = decodeNestedEntityHtml(toInsert);
                     exec("insertHTML", sanitizeHtmlString(toInsert));
                 } else if (text && text.trim() !== '') {
                     var looksLikeHtml = /<[a-z][\s\S]*>/i.test(text) || text.indexOf('&lt;') !== -1;
@@ -885,6 +919,7 @@ function createHTML(options = {}) {
                             var isFullDoc = lowerText.indexOf('<!doctype') !== -1 || lowerText.indexOf('<html') !== -1 || lowerText.indexOf('<body') !== -1;
                             var toInsertText = isFullDoc ? extractBodyFragment(htmlFromText) : htmlFromText;
                             toInsertText = decodeHtmlEntities(toInsertText);
+                            toInsertText = decodeNestedEntityHtml(toInsertText);
                             exec("insertHTML", sanitizeHtmlString(toInsertText));
                         } else {
                             exec("insertText", text);
