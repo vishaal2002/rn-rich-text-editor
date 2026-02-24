@@ -380,10 +380,9 @@ export default class Editor extends Component {
     }
     
     const readOnlyStyle = readOnly ? { borderWidth: 0, borderColor: 'transparent' } : {};
-    // overflow: 'hidden' prevents the WebView from visually cutting off the container border at corners
-    // disabledStyle last so it overrides user's backgroundColor when disabled
-    // readOnlyStyle after containerStyleProp to ensure border is removed
-    const containerStyle = [containerStyleProp, errorStyle, { overflow: 'hidden' }, readOnlyStyle, disabledStyle];
+    // On iOS, overflow: 'hidden' on the same View as the border clips the border at corners.
+    // So we keep the border on the outer View and put overflow: 'hidden' on an inner wrapper only.
+    const containerStyle = [containerStyleProp, errorStyle, readOnlyStyle, disabledStyle];
     if (useContainer) {
       // For readonly with height 0, don't constrain - let it expand for measurement
       if (readOnly && height === 0) {
@@ -396,14 +395,19 @@ export default class Editor extends Component {
         }
       }
     }
-    
+    const innerClipStyle = { flex: 1, overflow: 'hidden' };
+
     return useContainer ? (
       <View style={containerStyle} onLayout={this.onViewLayout}>
-        {this.renderWebView()}
+        <View style={innerClipStyle}>
+          {this.renderWebView()}
+        </View>
       </View>
     ) : (
       <View style={containerStyle}>
-        {this.renderWebView()}
+        <View style={innerClipStyle}>
+          {this.renderWebView()}
+        </View>
       </View>
     );
   }

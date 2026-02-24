@@ -541,7 +541,8 @@ function createHTML(options = {}) {
                                 safeStyle = '';
                             }
                         }
-                        exec('insertHTML', "<img style='"+ safeStyle +"' src='"+ url +"'/>");
+                        var imgHtml = "<img style='"+ safeStyle +"' src='"+ url +"'/>";
+                        exec('insertHTML', SANITIZE_ENABLED ? sanitizeHtmlString(imgHtml) : imgHtml);
                         // This is needed, or the image will not be inserted if the html is empty
                         exec('insertHTML', "<br/>");
                         Actions.UPDATE_HEIGHT();
@@ -578,7 +579,7 @@ function createHTML(options = {}) {
                         }
                         var thumbnail = url.replace(/.(mp4|m3u8)/g, '') + '-thumbnail';
                         var html = "<br><div style='"+ safeStyle +"'><video src='"+ url +"' poster='"+ thumbnail + "' controls><source src='"+ url +"' type='video/mp4'>No video tag support</video></div><br>";
-                        exec('insertHTML', html);
+                        exec('insertHTML', SANITIZE_ENABLED ? sanitizeHtmlString(html) : html);
                         Actions.UPDATE_HEIGHT();
                     }
                 }
@@ -863,6 +864,7 @@ function createHTML(options = {}) {
                 var html = clipboardData.getData('text/html');
 
                 ${pasteListener} && postAction({type: 'CONTENT_PASTED', data: text || html});
+                // XSS: decoded content is always passed through sanitizeHtmlString before insertHTML
                 if (${pasteAsPlainText}) {
                     e.preventDefault();
                     exec("insertText", text || '');
@@ -871,6 +873,7 @@ function createHTML(options = {}) {
                     var lower = html.toLowerCase();
                     var isFullDocument = lower.indexOf('<!doctype') !== -1 || lower.indexOf('<html') !== -1 || lower.indexOf('<body') !== -1;
                     var toInsert = isFullDocument ? extractBodyFragment(html) : html;
+                    toInsert = decodeHtmlEntities(toInsert);
                     exec("insertHTML", sanitizeHtmlString(toInsert));
                 } else if (text && text.trim() !== '') {
                     var looksLikeHtml = /<[a-z][\s\S]*>/i.test(text) || text.indexOf('&lt;') !== -1;
@@ -881,6 +884,7 @@ function createHTML(options = {}) {
                             var lowerText = htmlFromText.toLowerCase();
                             var isFullDoc = lowerText.indexOf('<!doctype') !== -1 || lowerText.indexOf('<html') !== -1 || lowerText.indexOf('<body') !== -1;
                             var toInsertText = isFullDoc ? extractBodyFragment(htmlFromText) : htmlFromText;
+                            toInsertText = decodeHtmlEntities(toInsertText);
                             exec("insertHTML", sanitizeHtmlString(toInsertText));
                         } else {
                             exec("insertText", text);

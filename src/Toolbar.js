@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { actions } from './actions';
 
 function DefaultForeColorIcon({ tintColor, iconSize }) {
@@ -572,11 +572,12 @@ export default class Toolbar extends Component {
         containerStyle = rest;
       }
     }
-    const vStyle = [styles.barContainer, disabledStyle, containerStyle, disabled && this._getButtonDisabledStyle()];
+    const iosNoClip = Platform.OS === 'ios' ? { overflow: 'visible' } : {};
+    const vStyle = [styles.barContainer, disabledStyle, containerStyle, disabled && this._getButtonDisabledStyle(), iosNoClip];
     const showFades = horizontal && !disabled;
     return (
       <View style={vStyle}>
-        <View style={styles.scrollWrapper} onLayout={showFades ? this._onLayout : undefined}>
+        <View style={[styles.scrollWrapper, iosNoClip]} onLayout={showFades ? this._onLayout : undefined}>
           <FlatList
             horizontal={horizontal}
             style={[flatContainerStyle, showFades && styles.scrollList]}
