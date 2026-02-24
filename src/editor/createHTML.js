@@ -38,9 +38,9 @@ function createHTML(options = {}) {
     <style>
         ${initialCSSText}
         * {outline: 0px solid transparent;-webkit-tap-highlight-color: rgba(0,0,0,0);-webkit-touch-callout: none;box-sizing: border-box;}
-        html, body { margin: 0; padding: 0;font-family: Arial, Helvetica, sans-serif; font-size:1em; min-height: 100%;}
+        html, body { margin: 0; padding: 0;font-family: "Inter-Regular", "Inter", -apple-system, sans-serif; font-size:1em; min-height: 100%;}
         body { overflow-y: auto; -webkit-overflow-scrolling: touch;background-color: ${backgroundColor};caret-color: ${caretColor};${useContainer ? ' height: auto;' : ' height: 100%;'}}
-        .content {font-family: Arial, Helvetica, sans-serif;color: ${color}; width: 100%;${useContainer ? 'min-height: 100%;' : 'height:100%;'
+        .content {font-family: "Inter-Regular", "Inter", -apple-system, sans-serif;color: ${color}; width: 100%;${useContainer ? 'min-height: 100%;' : 'height:100%;'
     }-webkit-overflow-scrolling: touch;padding-left: 0;padding-right: 0;}
         .pell { ${useContainer ? 'min-height: 100%;' : 'height: 100%;'} } .pell-content { outline: 0; padding: 10px; ${useContainer ? 'min-height: 100%;' : 'overflow-y: auto; height: 100%;'} ${contentCSSText}}
     </style>
@@ -969,10 +969,10 @@ function createReadOnlyHTML(options = {}) {
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
+        html, body { margin: 0; padding: 0; font-family: "Inter-Regular", "Inter", -apple-system, sans-serif; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
         body { background-color: ${backgroundColor}; color: ${color}; }
         .readonly-container {
-            ${useDefaultFont ? 'font-family: Arial, Helvetica, sans-serif; font-size: 1em;' : ''}
+            ${useDefaultFont ? 'font-family: "Inter-Regular", "Inter", -apple-system, sans-serif; font-size: 1em;' : ''}
             color: ${color};
             padding: 0;
             margin: 0;

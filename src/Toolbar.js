@@ -138,6 +138,7 @@ export default class Toolbar extends Component {
   shouldComponentUpdate(nextProps, nextState) {
     let that = this;
     return (
+      nextProps.disabled !== that.props.disabled ||
       nextState.items !== that.state.items ||
       nextState.actions !== that.state.actions ||
       nextState.data !== that.state.data ||
@@ -209,6 +210,18 @@ export default class Toolbar extends Component {
 
   componentDidMount() {
     setTimeout(this._mount);
+  }
+
+  componentDidUpdate(prevProps) {
+    // Clear selection when toolbar becomes disabled so re-enabling doesn't show stale "selected" (e.g. blue) icons
+    const actions = this.state.actions || this.props.actions;
+    if (!prevProps.disabled && this.props.disabled && actions && actions.length) {
+      this.setState({
+        items: [],
+        selectedAlign: null,
+        data: actions.map(action => ({ action, selected: false })),
+      });
+    }
   }
 
   _mount = () => {
