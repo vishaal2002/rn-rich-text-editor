@@ -1042,9 +1042,8 @@ function createReadOnlyHTML(options = {}) {
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em; height: auto !important; min-height: 0 !important; }
-        html { overflow-x: auto; overflow-y: hidden; }
-        body { background-color: ${backgroundColor}; color: ${color}; overflow-x: auto; overflow-y: hidden; }
+        html, body { margin: 0; padding: 0; font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
+        body { background-color: ${backgroundColor}; color: ${color}; }
         .readonly-container {
             ${useDefaultFont ? 'font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em;' : ''}
             color: ${color};
@@ -1053,29 +1052,34 @@ function createReadOnlyHTML(options = {}) {
             height: auto !important;
             min-height: 0 !important;
             width: 100%;
-            min-width: min-content;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
             ${contentCSSText}
         }
-        .readonly-container > *:first-child {
+        .readonly-content-inner {
+            min-width: min-content;
+        }
+        .readonly-content-inner > *:first-child {
             margin-top: 0 !important;
         }
-        .readonly-container > *:last-child {
+        .readonly-content-inner > *:last-child {
             margin-bottom: 0 !important;
         }
-        .readonly-container p {
+        .readonly-content-inner p {
             margin-top: 0;
             margin-bottom: 0.5em;
         }
-        .readonly-container p:last-child {
+        .readonly-content-inner p:last-child {
             margin-bottom: 0;
         }
-        .readonly-container ul,
-        .readonly-container ol {
+        .readonly-content-inner ul,
+        .readonly-content-inner ol {
             margin-top: 0;
             margin-bottom: 0;
             padding-left: 1.5em;
         }
-        .readonly-container li {
+        .readonly-content-inner li {
             margin-bottom: 0;
         }
     </style>
@@ -1083,7 +1087,7 @@ function createReadOnlyHTML(options = {}) {
     <style>${cssText}</style>
 </head>
 <body>
-    <div id="readonly-content" class="readonly-container"></div>
+    <div id="readonly-content" class="readonly-container"><div class="readonly-content-inner"></div></div>
     <script>
         (function() {
             var SANITIZE_ENABLED = ${sanitizeHtml};
@@ -1142,14 +1146,15 @@ function createReadOnlyHTML(options = {}) {
             }
             
             var content = "${escapedContent}";
-            var el = document.getElementById('readonly-content');
+            var outer = document.getElementById('readonly-content');
+            var el = outer ? outer.querySelector('.readonly-content-inner') : null;
             if (el) {
                 el.innerHTML = sanitizeHtmlString(content);
                 var lastH = 0;
                 var sendHeight = function() {
-                    var scrollH = el.scrollHeight;
-                    var offsetH = el.offsetHeight;
-                    var boundingH = el.getBoundingClientRect().height;
+                    var scrollH = outer.scrollHeight;
+                    var offsetH = outer.offsetHeight;
+                    var boundingH = outer.getBoundingClientRect().height;
                     var h = Math.ceil(Math.max(scrollH, offsetH, boundingH));
                     if (h !== lastH && window.ReactNativeWebView) {
                         lastH = h;
@@ -1162,7 +1167,7 @@ function createReadOnlyHTML(options = {}) {
                 setTimeout(sendHeight, 200);
                 if (typeof ResizeObserver !== 'undefined') {
                     try {
-                        new ResizeObserver(sendHeight).observe(el);
+                        new ResizeObserver(sendHeight).observe(outer);
                     } catch (e) {}
                 }
             }
