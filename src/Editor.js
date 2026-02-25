@@ -99,6 +99,7 @@ export default class Editor extends Component {
               contentCSSText,
               sanitizeHtml,
               localFontCSS,
+              embedFontInReadonly: Platform.OS === 'android',
             })
           : (html ||
             createHTML({
@@ -236,19 +237,23 @@ export default class Editor extends Component {
         case messages.OFFSET_HEIGHT:
           if (that.props.readOnly) {
             const h = Number(data) || 1;
-            if (!that._readOnlyHeightSetOnce) {
+            // On iOS, don't apply the first height immediately: WebView often reports one-line height before layout finishes. Always debounce so we get the final height.
+            const applyFirstImmediately = !PlatformIOS && !that._readOnlyHeightSetOnce;
+            if (applyFirstImmediately) {
               that._readOnlyHeightSetOnce = true;
               that.setState({ height: h });
             } else {
               that._readOnlyHeightPending = h;
               if (that._readOnlyHeightTimeout) clearTimeout(that._readOnlyHeightTimeout);
+              const debounceMs = PlatformIOS ? 200 : 120;
               that._readOnlyHeightTimeout = setTimeout(() => {
                 that._readOnlyHeightTimeout = null;
+                that._readOnlyHeightSetOnce = true;
                 if (!that.unmount && that._readOnlyHeightPending != null) {
                   that.setState({ height: that._readOnlyHeightPending });
                   that._readOnlyHeightPending = null;
                 }
-              }, 120);
+              }, debounceMs);
             }
           } else {
             that.setWebHeight(data);
@@ -311,6 +316,7 @@ export default class Editor extends Component {
               contentCSSText,
               sanitizeHtml,
               localFontCSS,
+              embedFontInReadonly: Platform.OS === 'android',
             }),
           },
           height: 0,

@@ -1033,17 +1033,21 @@ function createReadOnlyHTML(options = {}) {
     initialCSSText = '',
     // XSS Protection: when true, sanitizes HTML content before rendering
     sanitizeHtml = true,
-    /** Optional @font-face CSS to use a local font (e.g. from app fonts folder). When not set, bundled Inter from src/fonts is used. */
+    /** Optional @font-face CSS to use a local font (e.g. from app fonts folder). When not set, uses embedded Inter on Android; on iOS system font is used to avoid large HTML issues. */
     localFontCSS = '',
+    /** When true, use embedded Inter font in readonly (Android). When false, use system font (iOS). */
+    embedFontInReadonly = false,
   } = options;
   const escapedContent = escapeForScript(content);
   const useDefaultFont =
     !/font-family\s*:/i.test(contentCSSText) && !/font-size\s*:/i.test(contentCSSText);
   const useLocalFont = typeof localFontCSS === 'string' && localFontCSS.trim().length > 0;
   const safeLocalFontCSS = useLocalFont ? localFontCSS.replace(/<\/style\s*>/gi, '<\\/style>') : '';
-  // Readonly: avoid embedding the large base64 font to prevent iOS WebView from failing to load/render. Use system font when no localFontCSS.
-  const fontBlock = useLocalFont ? `<style>${safeLocalFontCSS}</style>` : '';
-  const fontFamilyStack = useLocalFont
+  // iOS: avoid large base64 font so WebView doesn't fail to render. Android: use embedded Inter.
+  const fontBlock = useLocalFont
+    ? `<style>${safeLocalFontCSS}</style>`
+    : (embedFontInReadonly ? `<style>${DEFAULT_FONT_CSS}</style>` : '');
+  const fontFamilyStack = useLocalFont || embedFontInReadonly
     ? 'Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     : '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   return `
