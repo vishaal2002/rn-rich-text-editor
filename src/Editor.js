@@ -28,6 +28,8 @@ export default class Editor extends Component {
     dataDetectorTypes: ['none'],
     // XSS Protection: when true, sanitizes HTML on paste and insert operations (default: true)
     sanitizeHtml: true,
+    /** Optional. @font-face CSS string to use a local font (e.g. from app fonts folder). When not set, system font stack is used. */
+    localFontCSS: undefined,
   };
 
   constructor(props) {
@@ -82,6 +84,7 @@ export default class Editor extends Component {
       defaultHttps,
       initialContentHTML,
       sanitizeHtml,
+      localFontCSS,
     } = props;
     const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html && html.html)) || '';
     that.state = {
@@ -95,6 +98,7 @@ export default class Editor extends Component {
               cssText,
               contentCSSText,
               sanitizeHtml,
+              localFontCSS,
             })
           : (html ||
             createHTML({
@@ -121,6 +125,7 @@ export default class Editor extends Component {
               useCharacter,
               defaultHttps,
               sanitizeHtml,
+              localFontCSS,
             })),
       },
       keyboardHeight: 0,
@@ -283,7 +288,7 @@ export default class Editor extends Component {
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
-    const { editorStyle, disabled, placeholder, readOnly, initialContentHTML, html, sanitizeHtml } = this.props;
+    const { editorStyle, disabled, placeholder, readOnly, initialContentHTML, html, sanitizeHtml, localFontCSS } = this.props;
     if (readOnly) {
       const contentChanged = initialContentHTML !== prevProps.initialContentHTML || html !== prevProps.html;
       if (prevProps.readOnly !== readOnly || contentChanged || prevProps.editorStyle !== editorStyle) {
@@ -305,6 +310,7 @@ export default class Editor extends Component {
               cssText,
               contentCSSText,
               sanitizeHtml,
+              localFontCSS,
             }),
           },
           height: 0,

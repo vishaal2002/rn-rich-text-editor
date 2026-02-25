@@ -1,4 +1,7 @@
 import { getContentCSS } from "./contentCSS";
+import { INTER_REGULAR_BASE64 } from "./embeddedInterFont";
+
+const DEFAULT_FONT_CSS = `@font-face{font-family:'Inter';src:url(data:font/ttf;base64,${INTER_REGULAR_BASE64}) format('truetype');font-weight:400;font-style:normal;}`;
 
 function createHTML(options = {}) {
   const {
@@ -28,7 +31,13 @@ function createHTML(options = {}) {
     defaultHttps = true,
     // XSS Protection: when true, sanitizes HTML on paste and insert operations
     sanitizeHtml = true,
+    /** Optional @font-face CSS to use a custom local font. When not set, bundled Inter from src/fonts is used. */
+    localFontCSS = '',
   } = options;
+  const useLocalFont = typeof localFontCSS === 'string' && localFontCSS.trim().length > 0;
+  const safeLocalFontCSS = useLocalFont ? localFontCSS.replace(/<\/style\s*>/gi, '<\\/style>') : '';
+  const fontBlock = useLocalFont ? `<style>${safeLocalFontCSS}</style>` : `<style>${DEFAULT_FONT_CSS}</style>`;
+  const fontFamilyStack = 'Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   return String.raw`
 <!DOCTYPE html>
 <html>
@@ -36,15 +45,13 @@ function createHTML(options = {}) {
     <meta charset="utf-8">
     <title>RN Rich Text Editor</title>
     <meta name="viewport" content="user-scalable=1.0,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap" rel="stylesheet">
+    ${fontBlock}
     <style>
         ${initialCSSText}
         * {outline: 0px solid transparent;-webkit-tap-highlight-color: rgba(0,0,0,0);-webkit-touch-callout: none;box-sizing: border-box;}
-        html, body { margin: 0; padding: 0; font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em; min-height: 100%; }
+        html, body { margin: 0; padding: 0; font-family: ${fontFamilyStack}; font-size: 1em; min-height: 100%; }
         body { overflow-y: auto; -webkit-overflow-scrolling: touch;background-color: ${backgroundColor};caret-color: ${caretColor};${useContainer ? ' height: auto;' : ' height: 100%;'}}
-        .content { font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: ${color}; width: 100%;${useContainer ? 'min-height: 100%;' : 'height:100%;'
+        .content { font-family: ${fontFamilyStack}; color: ${color}; width: 100%;${useContainer ? 'min-height: 100%;' : 'height:100%;'
     }-webkit-overflow-scrolling: touch;padding-left: 0;padding-right: 0;}
         .pell { ${useContainer ? 'min-height: 100%;' : 'height: 100%;'} } .pell-content { outline: 0; padding: 10px; ${useContainer ? 'min-height: 100%;' : 'overflow-y: auto; height: 100%;'} ${contentCSSText}}
     </style>
@@ -1026,26 +1033,30 @@ function createReadOnlyHTML(options = {}) {
     initialCSSText = '',
     // XSS Protection: when true, sanitizes HTML content before rendering
     sanitizeHtml = true,
+    /** Optional @font-face CSS to use a local font (e.g. from app fonts folder). When not set, bundled Inter from src/fonts is used. */
+    localFontCSS = '',
   } = options;
   const escapedContent = escapeForScript(content);
   const useDefaultFont =
     !/font-family\s*:/i.test(contentCSSText) && !/font-size\s*:/i.test(contentCSSText);
+  const useLocalFont = typeof localFontCSS === 'string' && localFontCSS.trim().length > 0;
+  const safeLocalFontCSS = useLocalFont ? localFontCSS.replace(/<\/style\s*>/gi, '<\\/style>') : '';
+  const fontBlock = useLocalFont ? `<style>${safeLocalFontCSS}</style>` : `<style>${DEFAULT_FONT_CSS}</style>`;
+  const fontFamilyStack = 'Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   return `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="user-scalable=1.0,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=optional" rel="stylesheet">
+${fontBlock}
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
+        html, body { margin: 0; padding: 0; font-family: ${fontFamilyStack}; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
         body { background-color: ${backgroundColor}; color: ${color}; }
         .readonly-container {
-            ${useDefaultFont ? 'font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em;' : ''}
+            ${useDefaultFont ? `font-family: ${fontFamilyStack}; font-size: 1em;` : ''}
             color: ${color};
             padding: 0;
             margin: 0;

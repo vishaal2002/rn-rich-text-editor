@@ -68,6 +68,13 @@ export interface EditorProps {
    * @default true
    */
   sanitizeHtml?: boolean;
+  /**
+   * Optional. CSS string containing @font-face rule(s) to use a custom font instead of the default.
+   * By default the editor uses Inter from the package's bundled src/fonts (no network load).
+   * Set this to use a different font (e.g. from your app's assets).
+   * Example (Expo): pass a string like "@font-face { font-family: 'Inter'; src: url('...'); font-weight: 400; }" where url is from Asset.fromModule(require('./fonts/MyFont.woff2')).localUri
+   */
+  localFontCSS?: string;
   [key: string]: unknown;
 }
 

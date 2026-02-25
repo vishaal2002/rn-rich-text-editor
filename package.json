@@ -29,7 +29,7 @@
     "package.json"
   ],
   "scripts": {
-    "build": "echo 'No build required — package uses src/ directly'"
+    "build": "node scripts/embed-inter-font.js"
   },
   "peerDependencies": {
     "react": "*",
