@@ -46,6 +46,9 @@ export default class Editor extends Component {
     that._keyOpen = false;
     that._focus = false;
     that._skipNextContentBlur = false;
+    that._readOnlyHeightPending = null;
+    that._readOnlyHeightTimeout = null;
+    that._readOnlyHeightSetOnce = false;
     that.layout = {};
     that.selectionChangeListeners = [];
     const {
@@ -143,6 +146,10 @@ export default class Editor extends Component {
 
   componentWillUnmount() {
     this.unmount = true;
+    if (this._readOnlyHeightTimeout) {
+      clearTimeout(this._readOnlyHeightTimeout);
+      this._readOnlyHeightTimeout = null;
+    }
     this.keyboardEventListeners.forEach(eventListener => eventListener.remove());
   }
 
@@ -223,9 +230,24 @@ export default class Editor extends Component {
           break;
         case messages.OFFSET_HEIGHT:
           if (that.props.readOnly) {
-            that.setState({ height: Number(data) || 1 });
+            const h = Number(data) || 1;
+            if (!that._readOnlyHeightSetOnce) {
+              that._readOnlyHeightSetOnce = true;
+              that.setState({ height: h });
+            } else {
+              that._readOnlyHeightPending = h;
+              if (that._readOnlyHeightTimeout) clearTimeout(that._readOnlyHeightTimeout);
+              that._readOnlyHeightTimeout = setTimeout(() => {
+                that._readOnlyHeightTimeout = null;
+                if (!that.unmount && that._readOnlyHeightPending != null) {
+                  that.setState({ height: that._readOnlyHeightPending });
+                  that._readOnlyHeightPending = null;
+                }
+              }, 120);
+            }
+          } else {
+            that.setWebHeight(data);
           }
-          that.setWebHeight(data);
           break;
         case messages.OFFSET_Y:
           let offsetY = Number.parseInt(Number.parseInt(data) + that.layout.y || 0);
@@ -267,6 +289,12 @@ export default class Editor extends Component {
       if (prevProps.readOnly !== readOnly || contentChanged || prevProps.editorStyle !== editorStyle) {
         const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html?.html)) || '';
         const { backgroundColor, color, initialCSSText, cssText, contentCSSText } = editorStyle || {};
+        this._readOnlyHeightSetOnce = false;
+        if (this._readOnlyHeightTimeout) {
+          clearTimeout(this._readOnlyHeightTimeout);
+          this._readOnlyHeightTimeout = null;
+        }
+        this._readOnlyHeightPending = null;
         this.setState({
           html: {
             html: createReadOnlyHTML({
@@ -279,6 +307,7 @@ export default class Editor extends Component {
               sanitizeHtml,
             }),
           },
+          height: 0,
         });
       }
       return;

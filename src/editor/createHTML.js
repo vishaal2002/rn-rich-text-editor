@@ -1038,7 +1038,7 @@ function createReadOnlyHTML(options = {}) {
     <meta name="viewport" content="user-scalable=1.0,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&display=optional" rel="stylesheet">
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
@@ -1167,7 +1167,9 @@ function createReadOnlyHTML(options = {}) {
                 setTimeout(sendHeight, 200);
                 if (typeof ResizeObserver !== 'undefined') {
                     try {
-                        new ResizeObserver(sendHeight).observe(outer);
+                        setTimeout(function() {
+                            new ResizeObserver(sendHeight).observe(outer);
+                        }, 400);
                     } catch (e) {}
                 }
             }
