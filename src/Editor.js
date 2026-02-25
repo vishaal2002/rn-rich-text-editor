@@ -315,10 +315,10 @@ export default class Editor extends Component {
       <>
         <WebView
           useWebKit={true}
-          scrollEnabled={!readOnly}
+          scrollEnabled={true}
           hideKeyboardAccessoryView={!readOnly}
           keyboardDisplayRequiresUserAction={false}
-          nestedScrollEnabled={!readOnly}
+          nestedScrollEnabled={true}
           style={webViewStyle}
           {...rest}
           ref={that.setRef}

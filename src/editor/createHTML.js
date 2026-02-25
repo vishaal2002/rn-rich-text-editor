@@ -1042,8 +1042,9 @@ function createReadOnlyHTML(options = {}) {
     <style>
         ${initialCSSText}
         * { outline: 0; -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em; overflow: visible; height: auto !important; min-height: 0 !important; }
-        body { background-color: ${backgroundColor}; color: ${color}; }
+        html, body { margin: 0; padding: 0; font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em; height: auto !important; min-height: 0 !important; }
+        html { overflow-x: auto; overflow-y: hidden; }
+        body { background-color: ${backgroundColor}; color: ${color}; overflow-x: auto; overflow-y: hidden; }
         .readonly-container {
             ${useDefaultFont ? 'font-family: Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 1em;' : ''}
             color: ${color};
@@ -1052,6 +1053,7 @@ function createReadOnlyHTML(options = {}) {
             height: auto !important;
             min-height: 0 !important;
             width: 100%;
+            min-width: min-content;
             ${contentCSSText}
         }
         .readonly-container > *:first-child {
