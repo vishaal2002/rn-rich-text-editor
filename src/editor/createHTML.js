@@ -1041,8 +1041,11 @@ function createReadOnlyHTML(options = {}) {
     !/font-family\s*:/i.test(contentCSSText) && !/font-size\s*:/i.test(contentCSSText);
   const useLocalFont = typeof localFontCSS === 'string' && localFontCSS.trim().length > 0;
   const safeLocalFontCSS = useLocalFont ? localFontCSS.replace(/<\/style\s*>/gi, '<\\/style>') : '';
-  const fontBlock = useLocalFont ? `<style>${safeLocalFontCSS}</style>` : `<style>${DEFAULT_FONT_CSS}</style>`;
-  const fontFamilyStack = 'Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  // Readonly: avoid embedding the large base64 font to prevent iOS WebView from failing to load/render. Use system font when no localFontCSS.
+  const fontBlock = useLocalFont ? `<style>${safeLocalFontCSS}</style>` : '';
+  const fontFamilyStack = useLocalFont
+    ? 'Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+    : '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   return `
 <!DOCTYPE html>
 <html>

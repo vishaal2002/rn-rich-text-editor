@@ -428,9 +428,9 @@ export default class Editor extends Component {
       disabledStyle,
     ].filter(Boolean);
     if (useContainer) {
-      // For readonly with height 0, don't constrain - let it expand for measurement
+      // For readonly with height 0, give a minimum height so the WebView can render and post OFFSET_HEIGHT (avoids iOS disappearing)
       if (readOnly && height === 0) {
-        containerStyle.push({ minHeight: 1 });
+        containerStyle.push({ minHeight: 20 });
       } else {
         containerStyle.push({ height });
         // For readonly, ensure container expands fully to show all content without scrolling
