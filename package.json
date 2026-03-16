@@ -1,6 +1,6 @@
 {
   "name": "rn-rich-text-editor",
-  "version": "1.5.13-beta.2",
+  "version": "1.5.14-beta.3",
   "description": "A rich text editor component for React Native",
   "keywords": [
     "react-native",
@@ -35,10 +35,14 @@
     "react": "*",
     "react-native": "*",
     "react-native-webview": "*",
-    "react-native-svg": "*"
+    "react-native-svg": "*",
+    "react-native-render-html": ">=6.0.0"
   },
   "peerDependenciesMeta": {
     "react-native-svg": {
+      "optional": true
+    },
+    "react-native-render-html": {
       "optional": true
     }
   }
