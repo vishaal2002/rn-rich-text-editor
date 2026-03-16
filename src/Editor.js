@@ -3,7 +3,8 @@ import { WebView } from 'react-native-webview';
 import { actions } from './actions';
 import { messages } from './messages';
 import { Keyboard, Platform, StyleSheet, TextInput, View, Linking } from 'react-native';
-import { createHTML, createReadOnlyHTML } from './editor/createHTML';
+import { createHTML } from './editor/createHTML';
+import ReadOnlyContent from './ReadOnlyContent';
 
 const PlatformIOS = Platform.OS === 'ios';
 
@@ -48,9 +49,6 @@ export default class Editor extends Component {
     that._keyOpen = false;
     that._focus = false;
     that._skipNextContentBlur = false;
-    that._readOnlyHeightPending = null;
-    that._readOnlyHeightTimeout = null;
-    that._readOnlyHeightSetOnce = false;
     that.layout = {};
     that.selectionChangeListeners = [];
     const {
@@ -82,56 +80,44 @@ export default class Editor extends Component {
       styleWithCSS,
       useCharacter,
       defaultHttps,
-      initialContentHTML,
       sanitizeHtml,
       localFontCSS,
     } = props;
-    const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html && html.html)) || '';
-    that.state = {
-      html: {
-        html: readOnly
-          ? createReadOnlyHTML({
-              content: contentForReadOnly,
-              backgroundColor,
-              color,
-              initialCSSText,
-              cssText,
-              contentCSSText,
-              sanitizeHtml,
-              localFontCSS,
-              embedFontInReadonly: Platform.OS === 'android',
-            })
-          : (html ||
-            createHTML({
-              backgroundColor,
-              color,
-              caretColor,
-              placeholderColor,
-              initialCSSText,
-              cssText,
-              contentCSSText,
-              pasteAsPlainText,
-              pasteListener: !!onPaste,
-              keyUpListener: !!onKeyUp,
-              keyDownListener: !!onKeyDown,
-              inputListener: !!onInput,
-              enterKeyHint,
-              autoCapitalize,
-              autoCorrect,
-              initialFocus: initialFocus && !disabled,
-              defaultParagraphSeparator,
-              firstFocusEnd,
-              useContainer,
-              styleWithCSS,
-              useCharacter,
-              defaultHttps,
-              sanitizeHtml,
-              localFontCSS,
-            })),
-      },
-      keyboardHeight: 0,
-      height: readOnly ? 0 : (initialHeight > 0 ? initialHeight : DEFAULT_EDITOR_HEIGHT),
-    };
+    that.state = readOnly
+      ? { html: null, keyboardHeight: 0, height: 0 }
+      : {
+          html: {
+            html: html ||
+              createHTML({
+                backgroundColor,
+                color,
+                caretColor,
+                placeholderColor,
+                initialCSSText,
+                cssText,
+                contentCSSText,
+                pasteAsPlainText,
+                pasteListener: !!onPaste,
+                keyUpListener: !!onKeyUp,
+                keyDownListener: !!onKeyDown,
+                inputListener: !!onInput,
+                enterKeyHint,
+                autoCapitalize,
+                autoCorrect,
+                initialFocus: initialFocus && !disabled,
+                defaultParagraphSeparator,
+                firstFocusEnd,
+                useContainer,
+                styleWithCSS,
+                useCharacter,
+                defaultHttps,
+                sanitizeHtml,
+                localFontCSS,
+              }),
+          },
+          keyboardHeight: 0,
+          height: initialHeight > 0 ? initialHeight : DEFAULT_EDITOR_HEIGHT,
+        };
     that.focusListeners = [];
   }
 
@@ -152,10 +138,6 @@ export default class Editor extends Component {
 
   componentWillUnmount() {
     this.unmount = true;
-    if (this._readOnlyHeightTimeout) {
-      clearTimeout(this._readOnlyHeightTimeout);
-      this._readOnlyHeightTimeout = null;
-    }
     this.keyboardEventListeners.forEach(eventListener => eventListener.remove());
   }
 
@@ -235,29 +217,7 @@ export default class Editor extends Component {
           onInput?.(data);
           break;
         case messages.OFFSET_HEIGHT:
-          if (that.props.readOnly) {
-            const h = Number(data) || 1;
-            // On iOS, don't apply the first height immediately: WebView often reports one-line height before layout finishes. Always debounce so we get the final height.
-            const applyFirstImmediately = !PlatformIOS && !that._readOnlyHeightSetOnce;
-            if (applyFirstImmediately) {
-              that._readOnlyHeightSetOnce = true;
-              that.setState({ height: h });
-            } else {
-              that._readOnlyHeightPending = h;
-              if (that._readOnlyHeightTimeout) clearTimeout(that._readOnlyHeightTimeout);
-              const debounceMs = PlatformIOS ? 200 : 120;
-              that._readOnlyHeightTimeout = setTimeout(() => {
-                that._readOnlyHeightTimeout = null;
-                that._readOnlyHeightSetOnce = true;
-                if (!that.unmount && that._readOnlyHeightPending != null) {
-                  that.setState({ height: that._readOnlyHeightPending });
-                  that._readOnlyHeightPending = null;
-                }
-              }, debounceMs);
-            }
-          } else {
-            that.setWebHeight(data);
-          }
+          that.setWebHeight(data);
           break;
         case messages.OFFSET_Y:
           let offsetY = Number.parseInt(Number.parseInt(data) + that.layout.y || 0);
@@ -293,37 +253,8 @@ export default class Editor extends Component {
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
-    const { editorStyle, disabled, placeholder, readOnly, initialContentHTML, html, sanitizeHtml, localFontCSS } = this.props;
-    if (readOnly) {
-      const contentChanged = initialContentHTML !== prevProps.initialContentHTML || html !== prevProps.html;
-      if (prevProps.readOnly !== readOnly || contentChanged || prevProps.editorStyle !== editorStyle) {
-        const contentForReadOnly = initialContentHTML || (typeof html === 'string' ? html : (html?.html)) || '';
-        const { backgroundColor, color, initialCSSText, cssText, contentCSSText } = editorStyle || {};
-        this._readOnlyHeightSetOnce = false;
-        if (this._readOnlyHeightTimeout) {
-          clearTimeout(this._readOnlyHeightTimeout);
-          this._readOnlyHeightTimeout = null;
-        }
-        this._readOnlyHeightPending = null;
-        this.setState({
-          html: {
-            html: createReadOnlyHTML({
-              content: contentForReadOnly,
-              backgroundColor,
-              color,
-              initialCSSText,
-              cssText,
-              contentCSSText,
-              sanitizeHtml,
-              localFontCSS,
-              embedFontInReadonly: Platform.OS === 'android',
-            }),
-          },
-          height: 0,
-        });
-      }
-      return;
-    }
+    const { editorStyle, disabled, placeholder, readOnly } = this.props;
+    if (readOnly) return;
     if (prevProps.editorStyle !== editorStyle) {
       editorStyle && this.setContentStyle(editorStyle);
     }
@@ -342,24 +273,40 @@ export default class Editor extends Component {
     this.webviewBridge = ref;
   }
 
+  renderReadOnly() {
+    const {
+      initialContentHTML, html, editorStyle, onLink, onHeightChange,
+      sanitizeHtml, localFontCSS,
+    } = this.props;
+    const contentHtml = initialContentHTML || (typeof html === 'string' ? html : (html?.html)) || '';
+    return (
+      <ReadOnlyContent
+        html={contentHtml}
+        editorStyle={editorStyle || {}}
+        onLink={onLink}
+        onHeightChange={onHeightChange}
+        sanitizeHtml={sanitizeHtml}
+        localFontCSS={localFontCSS}
+      />
+    );
+  }
+
   renderWebView() {
     let that = this;
     const { html, editorStyle, useContainer, style, onLink, dataDetectorTypes, readOnly, disabled, ...rest } = that.props;
-    const { html: viewHTML, height: stateHeight } = that.state;
-    // Don't apply style prop to WebView to avoid double borders - style is only for container
+    const { html: viewHTML } = that.state;
     const webViewStyle = [
       styles.webview,
-      readOnly && stateHeight > 0 ? { height: stateHeight, flex: 0 } : (readOnly ? { flex: 1 } : undefined),
       disabled && Platform.OS === 'ios' ? { pointerEvents: 'none' } : undefined,
     ].filter(Boolean);
     return (
       <>
         <WebView
           useWebKit={true}
-          scrollEnabled={!readOnly}
-          hideKeyboardAccessoryView={!readOnly}
+          scrollEnabled={true}
+          hideKeyboardAccessoryView={false}
           keyboardDisplayRequiresUserAction={false}
-          nestedScrollEnabled={!readOnly}
+          nestedScrollEnabled={true}
           style={webViewStyle}
           {...rest}
           ref={that.setRef}
@@ -380,7 +327,7 @@ export default class Editor extends Component {
             return true;
           }}
         />
-        {!readOnly && Platform.OS === 'android' && <TextInput ref={ref => (that._input = ref)} style={styles._input} />}
+        {Platform.OS === 'android' && <TextInput ref={ref => (that._input = ref)} style={styles._input} />}
       </>
     );
   }
@@ -391,59 +338,54 @@ export default class Editor extends Component {
   }
 
   render() {
-    let { height } = this.state;
-
-    // useContainer is an optional prop with default value of true
-    // If set to true, it will use a View wrapper with styles and height.
-    // If set to false, it will not use a View wrapper
     const { useContainer, style, errorMessage, readOnly, disabled } = this.props;
-    const errorStyle = !readOnly && errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
+
+    if (readOnly) {
+      let containerStyleProp = style;
+      if (style) {
+        if (Array.isArray(style)) {
+          containerStyleProp = style.map(styleItem => {
+            if (styleItem && typeof styleItem === 'object') {
+              const { borderWidth, borderColor, borderTopWidth, borderBottomWidth, borderLeftWidth, borderRightWidth, ...rest } = styleItem;
+              return rest;
+            }
+            return styleItem;
+          });
+        } else if (typeof style === 'object') {
+          const { borderWidth, borderColor, borderTopWidth, borderBottomWidth, borderLeftWidth, borderRightWidth, ...rest } = style;
+          containerStyleProp = rest;
+        }
+      }
+      const readOnlyContainerStyle = [
+        containerStyleProp,
+        { borderWidth: 0, borderColor: 'transparent' },
+      ].filter(Boolean);
+      return (
+        <View style={readOnlyContainerStyle}>
+          {this.renderReadOnly()}
+        </View>
+      );
+    }
+
+    let { height } = this.state;
+    const errorStyle = errorMessage ? { borderWidth: 1, borderColor: '#d92d20' } : {};
     const disabledStyle = disabled
       ? {
           backgroundColor: '#C9CED7',
           ...(Platform.OS === 'ios' ? { pointerEvents: 'none' } : {}),
         }
       : {};
-    
-    // For readonly, remove border from style prop to ensure no border appears
-    let containerStyleProp = style;
-    if (readOnly && style) {
-      if (Array.isArray(style)) {
-        containerStyleProp = style.map(styleItem => {
-          if (styleItem && typeof styleItem === 'object') {
-            const { borderWidth, borderColor, borderTopWidth, borderBottomWidth, borderLeftWidth, borderRightWidth, ...rest } = styleItem;
-            return rest;
-          }
-          return styleItem;
-        });
-      } else if (typeof style === 'object') {
-        const { borderWidth, borderColor, borderTopWidth, borderBottomWidth, borderLeftWidth, borderRightWidth, ...rest } = style;
-        containerStyleProp = rest;
-      }
-    }
-    
-    const readOnlyStyle = readOnly ? { borderWidth: 0, borderColor: 'transparent' } : {};
     // On iOS, overflow: 'hidden' on the same View as the border clips the border at corners, so we use an inner wrapper.
     // On Android, overflow on the container is needed; inner wrapper causes top-edge clipping.
     const useInnerClipWrapper = PlatformIOS;
     const containerStyle = [
-      containerStyleProp,
+      style,
       errorStyle,
       useInnerClipWrapper ? null : { overflow: 'hidden' },
-      readOnlyStyle,
       disabledStyle,
     ].filter(Boolean);
     if (useContainer) {
-      // For readonly with height 0, give a minimum height so the WebView can render and post OFFSET_HEIGHT (avoids iOS disappearing)
-      if (readOnly && height === 0) {
-        containerStyle.push({ minHeight: 20 });
-      } else {
-        containerStyle.push({ height });
-        // For readonly, ensure container expands fully to show all content without scrolling
-        if (readOnly && height > 0) {
-          containerStyle.push({ minHeight: height, maxHeight: height });
-        }
-      }
+      containerStyle.push({ height });
     }
     const innerClipStyle = useInnerClipWrapper ? { flex: 1, overflow: 'hidden' } : null;
     const webViewContent = useInnerClipWrapper ? (

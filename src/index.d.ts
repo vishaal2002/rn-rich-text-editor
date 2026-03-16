@@ -184,3 +184,42 @@ export interface ColorPickerProps {
 
 /** Color picker modal component */
 export const ColorPicker: React.ComponentType<ColorPickerProps>;
+
+/** Props for the ReadOnlyContent component (native HTML renderer for readonly mode) */
+export interface ReadOnlyContentProps {
+  /** HTML string to render */
+  html?: string;
+  /** Editor style options (backgroundColor, color, contentCSSText, etc.) */
+  editorStyle?: object;
+  /** Callback when a link is pressed. Receives the URL string. */
+  onLink?: (url: string) => void;
+  /** Callback when the rendered content height changes. */
+  onHeightChange?: (height: number) => void;
+  /**
+   * XSS Protection: when true (default), sanitizes HTML content before rendering.
+   * @default true
+   */
+  sanitizeHtml?: boolean;
+  /** Optional CSS string containing @font-face rule(s) for a custom font. */
+  localFontCSS?: string;
+  /** Style applied to the root rendered element. */
+  style?: object;
+  /** Content width for image scaling. Defaults to window width. */
+  contentWidth?: number;
+}
+
+/**
+ * Native HTML renderer for readonly rich text content.
+ * Uses react-native-render-html (peer dependency) to render HTML as native Text/View components.
+ * This eliminates the WebView and its async height calculation, providing instant synchronous layout.
+ *
+ * Requires `react-native-render-html` >= 6.0.0 to be installed.
+ */
+export const ReadOnlyContent: React.ComponentType<ReadOnlyContentProps>;
+
+/**
+ * Creates minimal HTML for read-only display in a WebView.
+ * @deprecated Prefer using ReadOnlyContent component for native rendering.
+ * Kept for backward compatibility.
+ */
+export function createReadOnlyHTML(options?: object): string;

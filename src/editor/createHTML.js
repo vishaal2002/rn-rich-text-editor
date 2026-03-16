@@ -54,6 +54,8 @@ function createHTML(options = {}) {
         .content { font-family: ${fontFamilyStack}; color: ${color}; width: 100%;${useContainer ? 'min-height: 100%;' : 'height:100%;'
     }-webkit-overflow-scrolling: touch;padding-left: 0;padding-right: 0;}
         .pell { ${useContainer ? 'min-height: 100%;' : 'height: 100%;'} } .pell-content { outline: 0; padding: 10px; ${useContainer ? 'min-height: 100%;' : 'overflow-y: auto; height: 100%;'} ${contentCSSText}}
+        .pell-content > *:first-child { margin-top: 0; }
+        .pell-content > *:last-child { margin-bottom: 0; }
     </style>
     <style>
         [placeholder]:empty:before { content: attr(placeholder); color: ${placeholderColor};}
