@@ -15,10 +15,10 @@ const DANGEROUS_TAGS = [
 
 const EVENT_ATTR_RE = /^on[a-z]/i;
 const DANGEROUS_URL_RE = /^\s*(javascript|vbscript|data):/i;
-const URL_ATTRS = [
+const URL_ATTRS = new Set([
   'href', 'src', 'action', 'poster', 'background',
   'codebase', 'cite', 'data', 'dynsrc', 'lowsrc',
-];
+]);
 
 function stripTag(html, tag) {
   const re = new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi');
@@ -37,7 +37,7 @@ function sanitizeHtmlString(html) {
       const n = name.toLowerCase();
       if (EVENT_ATTR_RE.test(n)) return '';
       const raw = value.replace(/^["']|["']$/g, '');
-      if (URL_ATTRS.includes(n) && DANGEROUS_URL_RE.test(raw)) return '';
+      if (URL_ATTRS.has(n) && DANGEROUS_URL_RE.test(raw)) return '';
       if (n === 'style') {
         const lower = raw.toLowerCase();
         if (/expression|javascript|behavior|vbscript/.test(lower)) return '';
@@ -49,7 +49,7 @@ function sanitizeHtmlString(html) {
   return result;
 }
 
-function TableRenderer({ TDefaultRenderer, ...props }) {
+function HorizontalScrollRenderer({ TDefaultRenderer, ...props }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator nestedScrollEnabled>
       <TDefaultRenderer {...props} />
@@ -57,13 +57,8 @@ function TableRenderer({ TDefaultRenderer, ...props }) {
   );
 }
 
-function PreRenderer({ TDefaultRenderer, ...props }) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator nestedScrollEnabled>
-      <TDefaultRenderer {...props} />
-    </ScrollView>
-  );
-}
+const TableRenderer = HorizontalScrollRenderer;
+const PreRenderer = HorizontalScrollRenderer;
 
 const customRenderers = {
   table: TableRenderer,
@@ -74,11 +69,6 @@ function parseFontFamilyFromCSS(localFontCSS) {
   if (!localFontCSS) return null;
   const match = localFontCSS.match(/font-family\s*:\s*['"]?([^;'"]+)/i);
   return match ? match[1].trim() : null;
-}
-
-function hasItalicFaceInCSS(localFontCSS) {
-  if (!localFontCSS || typeof localFontCSS !== 'string') return false;
-  return /@font-face[\s\S]*font-style\s*:\s*italic/i.test(localFontCSS);
 }
 
 function parseStyleFromCSSText(cssText) {
@@ -93,11 +83,163 @@ function parseStyleFromCSSText(cssText) {
     const key = camelCase(rawKey.trim());
     let value = valueParts.join(':').trim();
     if (/^\d+(\.\d+)?(px)?$/.test(value)) {
-      value = parseFloat(value);
+      value = Number.parseFloat(value);
     }
     style[key] = value;
   });
   return style;
+}
+
+function parseFontFamilyFromCSSText(cssText) {
+  if (!cssText || typeof cssText !== 'string') return null;
+  const match = /font-family\s*:\s*([^;]+)/i.exec(cssText);
+  if (!match) return null;
+  const value = match[1]
+    .split(',')
+    .map(part => part.trim().replace(/^['"]|['"]$/g, ''))
+    .find(Boolean);
+  return value || null;
+}
+
+function deriveFontVariants(baseFamily, overrides = {}) {
+  const cleanBase = typeof baseFamily === 'string' ? baseFamily.trim() : '';
+  if (!cleanBase) {
+    return {
+      regular: null,
+      bold: overrides.fontFamilyBold || null,
+      italic: overrides.fontFamilyItalic || null,
+      boldItalic: overrides.fontFamilyBoldItalic || null,
+    };
+  }
+  const noQuotes = cleanBase.replace(/^['"]|['"]$/g, '');
+  const tryReplace = (from, to) => (noQuotes.includes(from) ? noQuotes.replace(from, to) : null);
+  const boldGuess =
+    tryReplace('Regular', 'Bold') ||
+    tryReplace('-regular', '-bold') ||
+    tryReplace('_regular', '_bold') ||
+    `${noQuotes}-Bold`;
+  const italicGuess =
+    tryReplace('Regular', 'Italic') ||
+    tryReplace('-regular', '-italic') ||
+    tryReplace('_regular', '_italic') ||
+    `${noQuotes}-Italic`;
+  const boldItalicGuess =
+    tryReplace('Regular', 'BoldItalic') ||
+    tryReplace('-regular', '-boldItalic') ||
+    tryReplace('_regular', '_boldItalic') ||
+    `${noQuotes}-BoldItalic`;
+  return {
+    regular: noQuotes,
+    bold: overrides.fontFamilyBold || boldGuess,
+    italic: overrides.fontFamilyItalic || italicGuess,
+    boldItalic: overrides.fontFamilyBoldItalic || boldItalicGuess,
+  };
+}
+
+function normalizeInlineFontStyles(html, fontVariants) {
+  if (!html || typeof html !== 'string') return html;
+  if (!fontVariants || !fontVariants.regular) return html;
+
+  const parseStyleAttribute = (styleValue) => {
+    const declarations = styleValue
+      .split(';')
+      .map(part => part.trim())
+      .filter(Boolean);
+    const map = {};
+    const order = [];
+    declarations.forEach((decl) => {
+      const idx = decl.indexOf(':');
+      if (idx <= 0) return;
+      const key = decl.slice(0, idx).trim().toLowerCase();
+      const value = decl.slice(idx + 1).trim();
+      if (!order.includes(key)) order.push(key);
+      map[key] = value;
+    });
+    return { map, order };
+  };
+
+  const isBoldWeight = (fontWeight) => {
+    if (!fontWeight) return false;
+    if (fontWeight === 'bold' || fontWeight === 'bolder') return true;
+    return /^\d+$/.test(fontWeight) && Number(fontWeight) >= 600;
+  };
+
+  const chooseVariantFamily = (isBold, isItalic) => {
+    if (isBold && isItalic) {
+      // Prefer explicit bold-italic face when available.
+      // If not available, keep regular family so native text can combine
+      // font-weight + font-style without being forced into a non-italic bold face.
+      return fontVariants.boldItalic || fontVariants.regular;
+    }
+    if (isBold) {
+      return fontVariants.bold || fontVariants.regular;
+    }
+    if (fontVariants.italic) {
+      return fontVariants.italic;
+    }
+    return fontVariants.regular;
+  };
+
+  const serializeStyleAttribute = (map, order) => order
+    .filter(key => map[key] != null && String(map[key]).trim() !== '')
+    .map(key => `${key}: ${map[key]}`)
+    .join('; ');
+
+  return html.replace(/style\s*=\s*"([^"]*)"/gi, (full, styleValue) => {
+    const { map, order } = parseStyleAttribute(styleValue);
+    const fontWeight = (map['font-weight'] || '').toLowerCase();
+    const fontStyle = (map['font-style'] || '').toLowerCase();
+    const isBold = isBoldWeight(fontWeight);
+    const isItalic = fontStyle === 'italic' || fontStyle === 'oblique';
+
+    if (!isBold && !isItalic) return full;
+
+    const variantFamily = chooseVariantFamily(isBold, isItalic);
+
+    map['font-family'] = variantFamily;
+    if (!order.includes('font-family')) {
+      order.push('font-family');
+    }
+    // Keep original font-weight/font-style values.
+    // Normalizing them to "normal" can drop formatting when a variant name is unavailable at runtime.
+
+    const nextStyle = serializeStyleAttribute(map, order);
+    return `style="${nextStyle}"`;
+  });
+}
+
+function normalizeSemanticFontTags(html) {
+  if (!html || typeof html !== 'string') return html;
+  let next = html;
+
+  // Preserve italic context when bold tags are nested inside italic spans.
+  next = next.replace(
+    /<span\b([^>]*)style="([^"]*font-style\s*:\s*(italic|oblique)[^"]*)"([^>]*)>\s*<(strong|b)\b[^>]*>([\s\S]*?)<\/\5>\s*<\/span>/gi,
+    (_m, preA, styleA, _italicKind, postA, _bTag, inner) =>
+      `<span${preA}style="${styleA}"${postA}><span style="font-weight: bold; font-style: italic">${inner}</span></span>`,
+  );
+
+  // Normalize nested semantic combinations first so combined styles are preserved.
+  next = next.replace(
+    /<(strong|b)\b[^>]*>\s*<(em|i)\b[^>]*>([\s\S]*?)<\/\2>\s*<\/\1>/gi,
+    (_m, _bTag, _iTag, inner) => `<span style="font-weight: bold; font-style: italic">${inner}</span>`,
+  );
+  next = next.replace(
+    /<(em|i)\b[^>]*>\s*<(strong|b)\b[^>]*>([\s\S]*?)<\/\2>\s*<\/\1>/gi,
+    (_m, _iTag, _bTag, inner) => `<span style="font-weight: bold; font-style: italic">${inner}</span>`,
+  );
+
+  // Normalize standalone semantic tags to inline styles so font mapping is consistent.
+  next = next.replace(
+    /<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi,
+    (_m, _tag, inner) => `<span style="font-weight: bold">${inner}</span>`,
+  );
+  next = next.replace(
+    /<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi,
+    (_m, _tag, inner) => `<span style="font-style: italic">${inner}</span>`,
+  );
+
+  return next;
 }
 
 export default function ReadOnlyContent({
@@ -117,20 +259,13 @@ export default function ReadOnlyContent({
     () => parseFontFamilyFromCSS(localFontCSS),
     [localFontCSS],
   );
-  const customFontHasItalic = useMemo(
-    () => hasItalicFaceInCSS(localFontCSS),
-    [localFontCSS],
-  );
-
-  const source = useMemo(() => {
-    const raw = typeof html === 'string' ? html : '';
-    const sanitized = shouldSanitize ? sanitizeHtmlString(raw) : raw;
-    return { html: sanitized || '<p></p>' };
-  }, [html, shouldSanitize]);
-
   const {
     backgroundColor,
     color,
+    fontFamily: editorFontFamily,
+    fontFamilyBold,
+    fontFamilyItalic,
+    fontFamilyBoldItalic,
     contentCSSText,
   } = editorStyle;
 
@@ -138,24 +273,42 @@ export default function ReadOnlyContent({
     () => parseStyleFromCSSText(contentCSSText),
     [contentCSSText],
   );
-  const normalizedContentStyles = useMemo(() => {
-    const next = { ...contentStyles };
-    // iOS readonly: avoid forcing font-family from CSS, because many custom fonts
-    // don't provide italic variants and italic text then renders as regular.
-    if (Platform.OS === 'ios') {
-      delete next.fontFamily;
-    }
-    return next;
-  }, [contentStyles]);
+  const resolvedFontFamily = useMemo(
+    () => editorFontFamily || parseFontFamilyFromCSSText(contentCSSText) || customFontFamily || null,
+    [editorFontFamily, contentCSSText, customFontFamily],
+  );
+  const fontVariants = useMemo(
+    () => deriveFontVariants(resolvedFontFamily, { fontFamilyBold, fontFamilyItalic, fontFamilyBoldItalic }),
+    [resolvedFontFamily, fontFamilyBold, fontFamilyItalic, fontFamilyBoldItalic],
+  );
+  const source = useMemo(() => {
+    const raw = typeof html === 'string' ? html : '';
+    const sanitized = shouldSanitize ? sanitizeHtmlString(raw) : raw;
+    const semanticNormalized = normalizeSemanticFontTags(sanitized);
+    const normalized = normalizeInlineFontStyles(semanticNormalized, fontVariants);
+    return { html: normalized || '<p></p>' };
+  }, [html, shouldSanitize, fontVariants]);
+
+  const normalizedContentStyles = useMemo(() => ({ ...contentStyles }), [contentStyles]);
 
   const baseStyle = useMemo(() => ({
-    // iOS: never force custom font in readonly mode so italic styles are always respected.
-    ...(Platform.OS !== 'ios' && customFontFamily && customFontHasItalic ? { fontFamily: customFontFamily } : {}),
+    ...(fontVariants.regular ? { fontFamily: fontVariants.regular } : {}),
     fontSize: 16,
     color: color || '#000033',
     backgroundColor: backgroundColor || 'transparent',
     ...normalizedContentStyles,
-  }), [customFontFamily, customFontHasItalic, color, backgroundColor, normalizedContentStyles]);
+  }), [fontVariants.regular, color, backgroundColor, normalizedContentStyles]);
+
+  const systemFonts = useMemo(() => {
+    const defaults = ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'];
+    const variants = [
+      fontVariants.regular,
+      fontVariants.bold,
+      fontVariants.italic,
+      fontVariants.boldItalic,
+    ].filter(Boolean);
+    return Array.from(new Set([...variants, ...defaults]));
+  }, [fontVariants.regular, fontVariants.bold, fontVariants.italic, fontVariants.boldItalic]);
 
   const tagsStyles = useMemo(() => ({
     body: {
@@ -179,11 +332,8 @@ export default function ReadOnlyContent({
     li: {
       marginBottom: 0,
     },
-    i: {
-      fontStyle: 'italic',
-    },
-    em: {
-      fontStyle: 'italic',
+    span: {
+      ...(fontVariants.regular ? { fontFamily: fontVariants.regular } : {}),
     },
     pre: {
       whiteSpace: 'pre',
@@ -196,7 +346,7 @@ export default function ReadOnlyContent({
       borderWidth: 1,
       borderColor: '#ccc',
       padding: 4,
-      fontWeight: 'bold',
+      ...(fontVariants.bold ? { fontFamily: fontVariants.bold, fontWeight: 'normal' } : { fontWeight: 'bold' }),
     },
     td: {
       borderWidth: 1,
@@ -216,7 +366,7 @@ export default function ReadOnlyContent({
     img: {
       maxWidth: '100%',
     },
-  }), []);
+  }), [fontVariants.regular, fontVariants.bold]);
 
   const onLayout = useCallback(
     (event) => {
@@ -260,9 +410,11 @@ export default function ReadOnlyContent({
       contentWidth={contentWidth}
       baseStyle={baseStyle}
       tagsStyles={tagsStyles}
+      systemFonts={systemFonts}
       renderers={customRenderers}
       renderersProps={renderersProps}
       defaultTextProps={defaultTextProps}
+      enableUserAgentStyles={false}
       enableExperimentalMarginCollapsing
       onLayout={onLayout}
       style={style}

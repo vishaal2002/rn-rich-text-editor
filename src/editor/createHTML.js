@@ -33,9 +33,24 @@ function createHTML(options = {}) {
     sanitizeHtml = true,
     /** Optional @font-face CSS to use a custom local font. When not set, bundled Inter from src/fonts is used. */
     localFontCSS = '',
+    /** When true, do not inject built-in getContentCSS() rules. */
+    disableDefaultCSS = false,
+    /** Optional CSS string to replace built-in getContentCSS() rules entirely. */
+    customContentCSS = '',
+    /** Optional script injected before editor initialization script runs. */
+    initialJS = '',
   } = options;
   const useLocalFont = typeof localFontCSS === 'string' && localFontCSS.trim().length > 0;
   const safeLocalFontCSS = useLocalFont ? localFontCSS.replace(/<\/style\s*>/gi, '<\\/style>') : '';
+  const safeCustomContentCSS = typeof customContentCSS === 'string'
+    ? customContentCSS.replace(/<\/style\s*>/gi, '<\\/style>')
+    : '';
+  const contentCSSBlock = disableDefaultCSS
+    ? (safeCustomContentCSS ? `<style>${safeCustomContentCSS}</style>` : '')
+    : (safeCustomContentCSS ? `<style>${safeCustomContentCSS}</style>` : getContentCSS());
+  const safeInitialJS = typeof initialJS === 'string'
+    ? initialJS.replace(/<\/script\s*>/gi, '<\\/script>')
+    : '';
   const fontBlock = useLocalFont ? `<style>${safeLocalFontCSS}</style>` : `<style>${DEFAULT_FONT_CSS}</style>`;
   const fontFamilyStack = 'Inter, "Inter-Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   return String.raw`
@@ -61,8 +76,9 @@ function createHTML(options = {}) {
         [placeholder]:empty:before { content: attr(placeholder); color: ${placeholderColor};}
         [placeholder]:empty:focus:before { content: attr(placeholder);color: ${placeholderColor};display:block;}
     </style>
-    ${getContentCSS()}
+    ${contentCSSBlock}
     <style>${cssText}</style>
+    ${safeInitialJS ? `<script>${safeInitialJS}</script>` : ''}
 </head>
 <body>
 <div class="content"><div id="editor" class="pell"/></div>

@@ -1,6 +1,6 @@
 {
   "name": "rn-rich-text-editor",
-  "version": "1.5.14",
+  "version": "1.5.15",
   "description": "A rich text editor component for React Native",
   "keywords": [
     "react-native",
@@ -25,7 +25,11 @@
     }
   },
   "files": [
-    "src",
+    "src/*.js",
+    "src/*.d.ts",
+    "src/editor",
+    "src/img",
+    "README.md",
     "package.json"
   ],
   "scripts": {

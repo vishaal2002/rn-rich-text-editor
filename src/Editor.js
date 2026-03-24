@@ -31,6 +31,12 @@ export default class Editor extends Component {
     sanitizeHtml: true,
     /** Optional. @font-face CSS string to use a local font (e.g. from app fonts folder). When not set, system font stack is used. */
     localFontCSS: undefined,
+    /** Optional. Disable built-in editor content CSS injection. */
+    disableDefaultCSS: false,
+    /** Optional. CSS string that replaces built-in getContentCSS() rules. */
+    customContentCSS: '',
+    /** Optional. JS string injected into initial HTML before editor initialization script runs. */
+    initialJS: '',
   };
 
   constructor(props) {
@@ -82,6 +88,9 @@ export default class Editor extends Component {
       defaultHttps,
       sanitizeHtml,
       localFontCSS,
+      disableDefaultCSS,
+      customContentCSS,
+      initialJS,
     } = props;
     that.state = readOnly
       ? { html: null, keyboardHeight: 0, height: 0 }
@@ -113,6 +122,9 @@ export default class Editor extends Component {
                 defaultHttps,
                 sanitizeHtml,
                 localFontCSS,
+                disableDefaultCSS,
+                customContentCSS,
+                initialJS,
               }),
           },
           keyboardHeight: 0,

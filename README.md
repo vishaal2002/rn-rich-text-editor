@@ -20,6 +20,7 @@
 - **Read-Only Mode**: Display formatted content without editing
 - **Keyboard Management**: Built-in iOS/Android keyboard handling
 - **Fully Customizable**: Toolbar, icons, styles, and behavior
+- **Pre-init Styling Control**: Replace default content CSS and run JS before editor init (no flash)
 
 ## 📦 Installation
 
@@ -77,6 +78,9 @@ function App() {
 | `onLink` | `(data: unknown) => void` | - | Link click callback |
 | `onHeightChange` | `(height: number) => void` | - | Height change callback |
 | `errorMessage` | `string` | - | Error message (shows red border) |
+| `disableDefaultCSS` | `boolean` | `false` | Disable built-in `getContentCSS()` rules |
+| `customContentCSS` | `string` | `''` | CSS injected at initial HTML render (replaces built-in content CSS) |
+| `initialJS` | `string` | `''` | JS injected before editor initialization script |
 
 **EditorStyle:**
 ```typescript
@@ -222,6 +226,35 @@ editorRef.current?.setLineHeight(1.5);
   style={{ backgroundColor: '#f0f0f0', paddingVertical: 8 }}
 />
 ```
+
+### Full CSS/JS Control (No Flash)
+
+```tsx
+<Editor
+  ref={editorRef}
+  disableDefaultCSS
+  customContentCSS={`
+    .pell-content {
+      background: #111827;
+      color: #e5e7eb;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .pell-content table {
+      width: 100%;
+      table-layout: fixed;
+    }
+  `}
+  initialJS={`
+    document.documentElement.setAttribute('data-theme', 'dark');
+  `}
+/>
+```
+
+Notes:
+- `customContentCSS` is applied during initial HTML creation, so styles are present before the editor becomes interactive.
+- `initialJS` runs before the editor bootstraps and before `editorInitializedCallback`.
+- If you do not pass these props, existing behavior remains unchanged.
 
 ### Image Handling
 
