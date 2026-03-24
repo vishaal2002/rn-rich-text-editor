@@ -75,6 +75,23 @@ export interface EditorProps {
    * Example (Expo): pass a string like "@font-face { font-family: 'Inter'; src: url('...'); font-weight: 400; }" where url is from Asset.fromModule(require('./fonts/MyFont.woff2')).localUri
    */
   localFontCSS?: string;
+  /**
+   * Optional. When true, do not inject built-in content CSS from getContentCSS().
+   * Use this if you want full control over content/table/list styles.
+   * @default false
+   */
+  disableDefaultCSS?: boolean;
+  /**
+   * Optional. CSS string that replaces the built-in getContentCSS() output.
+   * If provided, this is injected during initial HTML creation (no post-init flash).
+   */
+  customContentCSS?: string;
+  /**
+   * Optional. JavaScript string injected into the initial WebView HTML before
+   * the editor initialization script and before editorInitializedCallback.
+   * Use this for pre-init DOM/CSS setup to avoid visible style flash.
+   */
+  initialJS?: string;
   [key: string]: unknown;
 }
 

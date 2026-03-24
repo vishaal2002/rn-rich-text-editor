@@ -22,7 +22,7 @@ function DefaultHiliteColorIcon({ tintColor, iconSize }) {
   );
 }
 
-const FADE_WIDTH = 24;
+const FADE_WIDTH = 73;
 const FADE_STRIPS = 5;
 const TOOLBAR_BG = '#efefef';
 
@@ -132,6 +132,7 @@ export default class Toolbar extends Component {
       selectedAlign: null,
       showLeftFade: false,
       showRightFade: false,
+      activeAction: null,
     };
   }
 
@@ -145,6 +146,7 @@ export default class Toolbar extends Component {
       nextState.selectedAlign !== that.state.selectedAlign ||
       nextState.showLeftFade !== that.state.showLeftFade ||
       nextState.showRightFade !== that.state.showRightFade ||
+      nextState.activeAction !== that.state.activeAction ||
       nextProps.style !== that.props.style
     );
   }
@@ -210,6 +212,13 @@ export default class Toolbar extends Component {
 
   componentDidMount() {
     setTimeout(this._mount);
+  }
+
+  componentWillUnmount() {
+    if (this._activeActionTimeout) {
+      clearTimeout(this._activeActionTimeout);
+      this._activeActionTimeout = null;
+    }
   }
 
   componentDidUpdate(prevProps) {
@@ -353,7 +362,6 @@ export default class Toolbar extends Component {
       case actions.heading6:
       case actions.code:
       case actions.blockquote:
-      case actions.line:
       case actions.setParagraph:
       case actions.removeFormat:
       case actions.alignLeft:
@@ -366,6 +374,20 @@ export default class Toolbar extends Component {
       case actions.setHR:
       case actions.indent:
       case actions.outdent:
+        editor.showAndroidKeyboard();
+        editor.sendAction(action, 'result');
+        break;
+      case actions.line:
+        // `line` is an insert action with no persistent editor selection state.
+        // Keep it highlighted briefly on tap to provide visual feedback.
+        this.setState({ activeAction: actions.line });
+        if (this._activeActionTimeout) {
+          clearTimeout(this._activeActionTimeout);
+        }
+        this._activeActionTimeout = setTimeout(() => {
+          this.setState((s) => (s.activeAction === actions.line ? { activeAction: null } : null));
+          this._activeActionTimeout = null;
+        }, 180);
         editor.showAndroidKeyboard();
         editor.sendAction(action, 'result');
         break;
@@ -538,15 +560,17 @@ export default class Toolbar extends Component {
   }
 
   _renderAction(action, selected) {
+    const isTemporarilyActive = action === actions.line && this.state.activeAction === actions.line;
+    const effectiveSelected = selected || isTemporarilyActive;
     if (action === actions.separator) {
       return this._renderSeparator();
     }
     if (action === actions.align) {
-      return this._renderAlignButton(action, selected);
+      return this._renderAlignButton(action, effectiveSelected);
     }
     return this.props.renderAction
-      ? this.props.renderAction(action, selected)
-      : this._defaultRenderAction(action, selected);
+      ? this.props.renderAction(action, effectiveSelected)
+      : this._defaultRenderAction(action, effectiveSelected);
   }
 
   render() {
